@@ -44,9 +44,28 @@ pub const PostgreSQL = struct {
     }
 
     pub fn prepare(self: *PostgreSQL, sql: [:0]const u8) !Stmt {
+        // Convert ? placeholders to $1, $2, $3... for PostgreSQL
+        var converted: std.ArrayList(u8) = .{};
+        defer converted.deinit(self.allocator);
+
+        var param_num: usize = 1;
+        var i: usize = 0;
+        while (i < sql.len) : (i += 1) {
+            if (sql[i] == '?') {
+                const param_str = try std.fmt.allocPrint(self.allocator, "${d}", .{param_num});
+                defer self.allocator.free(param_str);
+                try converted.appendSlice(self.allocator, param_str);
+                param_num += 1;
+            } else {
+                try converted.append(self.allocator, sql[i]);
+            }
+        }
+
+        const converted_sql = try self.allocator.dupeZ(u8, converted.items);
+
         return Stmt{
             .conn = self.conn,
-            .sql = sql,
+            .sql = converted_sql,
             .params = .{},
             .param_values = .{},
             .result = null,

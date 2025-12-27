@@ -39,6 +39,9 @@ test "PostgreSQL CRUD operations" {
     };
     defer repo.deinit();
 
+    // Suppress NOTICE messages (like "table does not exist, skipping")
+    repo.adapter.exec("SET client_min_messages = WARNING") catch {};
+
     // Drop table if exists
     repo.adapter.exec("DROP TABLE IF EXISTS users") catch {};
 
