@@ -1,5 +1,6 @@
 const std = @import("std");
 const core_types = @import("../core/types.zig");
+const timestamps = @import("../core/timestamps.zig");
 
 pub fn Query(comptime TableT: type) type {
     return struct {
@@ -238,6 +239,7 @@ pub fn Update(comptime TableT: type) type {
         params: std.ArrayList(core_types.Value),
         set_exprs: std.ArrayList(u8),
         where_exprs: std.ArrayList(u8),
+        set_params_count: usize = 0,
 
         pub fn init(allocator: std.mem.Allocator) !Self {
             return .{
@@ -300,6 +302,7 @@ pub fn Update(comptime TableT: type) type {
                         return error.UnsupportedTypeInUpdate;
                     }
                 }
+                self.set_params_count += 1;
             }
             return self;
         }
@@ -356,7 +359,23 @@ pub fn Update(comptime TableT: type) type {
             return self;
         }
 
-        pub fn toSql(self: Self) ![:0]u8 {
+        pub fn toSql(self: *Self) ![:0]u8 {
+            // Auto-update updated_at if it exists and wasn't explicitly set
+            if (comptime timestamps.hasUpdatedAt(TableT.model_type)) {
+                const updated_at_field = "updated_at";
+                if (std.mem.indexOf(u8, self.set_exprs.items, updated_at_field) == null) {
+                    if (self.set_exprs.items.len > 0) {
+                        try self.set_exprs.appendSlice(self.allocator, ", ");
+                    }
+                    try self.set_exprs.appendSlice(self.allocator, updated_at_field);
+                    try self.set_exprs.appendSlice(self.allocator, " = ?");
+
+                    // Insert updated_at param at the end of SET params
+                    try self.params.insert(self.allocator, self.set_params_count, .{ .Integer = timestamps.currentTimestamp() });
+                    self.set_params_count += 1;
+                }
+            }
+
             var list = try std.ArrayList(u8).initCapacity(self.allocator, 0);
             errdefer list.deinit(self.allocator);
 

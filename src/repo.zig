@@ -1,5 +1,7 @@
 const std = @import("std");
 const query = @import("builder/query.zig");
+const timestamps = @import("core/timestamps.zig");
+const validation = @import("validation/validator.zig");
 
 pub fn Repo(comptime Adapter: type) type {
     return struct {
@@ -41,13 +43,23 @@ pub fn Repo(comptime Adapter: type) type {
             var stmt = try self.adapter.prepare(sql);
             defer stmt.deinit();
 
-            const Cols = @TypeOf(q).Table.columns;
+            const Q = if (@typeInfo(@TypeOf(q)) == .pointer) @typeInfo(@TypeOf(q)).pointer.child else @TypeOf(q);
+            const Cols = Q.Table.columns;
 
-            for (q.items.items) |item| {
+            for (q.items.items) |*item| {
+                // Auto-validate
+                try validation.validate(item);
+
+                // Auto-set timestamps
+                if (comptime timestamps.hasTimestamps(@TypeOf(item.*))) {
+                    timestamps.setCreatedAt(item);
+                    timestamps.setUpdatedAt(item);
+                }
+
                 try stmt.reset();
 
                 inline for (Cols, 0..) |col, i| {
-                    const val = @field(item, col.name);
+                    const val = @field(item.*, col.name);
                     switch (col.type) {
                         .Integer => try stmt.bind_int(i, @intCast(val)),
                         .Text => try stmt.bind_text(i, val),
@@ -61,7 +73,8 @@ pub fn Repo(comptime Adapter: type) type {
         }
 
         pub fn update(self: *Self, q: anytype) !void {
-            const sql = try q.toSql();
+            var mutable_q = q;
+            const sql = try mutable_q.toSql();
             defer self.allocator.free(sql);
 
             var stmt = try self.adapter.prepare(sql);
@@ -80,7 +93,8 @@ pub fn Repo(comptime Adapter: type) type {
         }
 
         pub fn delete(self: *Self, q: anytype) !void {
-            const sql = try q.toSql();
+            var mutable_q = q;
+            const sql = try mutable_q.toSql();
             defer self.allocator.free(sql);
 
             var stmt = try self.adapter.prepare(sql);
@@ -124,7 +138,8 @@ pub fn Repo(comptime Adapter: type) type {
         }
 
         pub fn all(self: *Self, q: anytype) ![]@TypeOf(q).Table.model_type {
-            const T = @TypeOf(q).Table.model_type;
+            const Q = if (@typeInfo(@TypeOf(q)) == .pointer) @typeInfo(@TypeOf(q)).pointer.child else @TypeOf(q);
+            const T = Q.Table.model_type;
             const sql = try q.toSql(self.allocator);
             defer self.allocator.free(sql);
 

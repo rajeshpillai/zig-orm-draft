@@ -70,6 +70,40 @@ pub fn max(value: anytype, maximum: anytype) ValidationError!void {
     if (value > maximum) return error.OutOfRange;
 }
 
+/// Automatically validates a model instance based on its 'rules' declaration
+pub fn validate(model: anytype) ValidationError!void {
+    const T = if (@typeInfo(@TypeOf(model)) == .pointer) @typeInfo(@TypeOf(model)).pointer.child else @TypeOf(model);
+    if (!@hasDecl(T, "rules")) return;
+
+    const rules = T.rules;
+    const rules_info = @typeInfo(@TypeOf(rules));
+    if (rules_info != .@"struct") @compileError("Rules must be a struct");
+
+    inline for (rules_info.@"struct".fields) |field| {
+        const field_rules = @field(rules, field.name);
+        const value = @field(model.*, field.name);
+
+        const field_rules_info = @typeInfo(@TypeOf(field_rules));
+        inline for (field_rules_info.@"struct".fields) |rule| {
+            const rule_val = @field(field_rules, rule.name);
+
+            if (comptime std.mem.eql(u8, rule.name, "required")) {
+                if (rule_val) _ = try required(value);
+            } else if (comptime std.mem.eql(u8, rule.name, "min_len")) {
+                try minLength(value, rule_val);
+            } else if (comptime std.mem.eql(u8, rule.name, "max_len")) {
+                try maxLength(value, rule_val);
+            } else if (comptime std.mem.eql(u8, rule.name, "email")) {
+                if (rule_val) try email(value);
+            } else if (comptime std.mem.eql(u8, rule.name, "min")) {
+                try min(value, rule_val);
+            } else if (comptime std.mem.eql(u8, rule.name, "max")) {
+                try max(value, rule_val);
+            }
+        }
+    }
+}
+
 test "required validator" {
     const valid = try required("hello");
     try std.testing.expectEqualStrings("hello", valid);

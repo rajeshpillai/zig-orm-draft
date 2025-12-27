@@ -1,4 +1,5 @@
 const std = @import("std");
+const timestamps = @import("../core/timestamps.zig");
 const Allocator = std.mem.Allocator;
 
 pub const MigrationFn = *const fn (db: *anyopaque) anyerror!void;
@@ -61,10 +62,10 @@ pub fn MigrationRunner(comptime Adapter: type) type {
             var stmt = try self.adapter.prepare(sql);
             defer stmt.deinit();
 
-            // Use version as applied_at for now (Zig master time API changes)
+            // Use the stable currentTimestamp helper
             try stmt.bind_int(0, migration.version);
             try stmt.bind_text(1, migration.name);
-            try stmt.bind_int(2, migration.version);
+            try stmt.bind_int(2, timestamps.currentTimestamp());
             _ = try stmt.step();
         }
 

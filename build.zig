@@ -141,4 +141,18 @@ pub fn build(b: *std.Build) void {
 
     const run_validation_tests = b.addRunArtifact(validation_tests);
     test_step.dependOn(&run_validation_tests.step);
+
+    // Timestamp tests
+    const timestamp_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/timestamp_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    timestamp_tests.root_module.addImport("zig-orm", mod);
+    timestamp_tests.linkLibC();
+
+    const run_timestamp_tests = b.addRunArtifact(timestamp_tests);
+    test_step.dependOn(&run_timestamp_tests.step);
 }
