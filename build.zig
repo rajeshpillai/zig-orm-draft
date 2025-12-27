@@ -127,4 +127,18 @@ pub fn build(b: *std.Build) void {
 
     const run_migrations_tests = b.addRunArtifact(migrations_tests);
     test_step.dependOn(&run_migrations_tests.step);
+
+    // Validation tests
+    const validation_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/validation_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    validation_tests.root_module.addImport("zig-orm", mod);
+    validation_tests.linkLibC();
+
+    const run_validation_tests = b.addRunArtifact(validation_tests);
+    test_step.dependOn(&run_validation_tests.step);
 }
