@@ -114,6 +114,15 @@ pub fn Repo(comptime Adapter: type) type {
             return results[0];
         }
 
+        /// Find all records matching condition
+        pub fn findAllBy(self: *Self, comptime TableT: type, condition: anytype) ![]TableT.model_type {
+            var q = try query.from(TableT, self.allocator);
+            defer q.deinit();
+            _ = try q.where(condition);
+
+            return try self.all(q);
+        }
+
         pub fn all(self: *Self, q: anytype) ![]@TypeOf(q).Table.model_type {
             const T = @TypeOf(q).Table.model_type;
             const sql = try q.toSql(self.allocator);

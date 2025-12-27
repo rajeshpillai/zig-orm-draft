@@ -18,6 +18,15 @@ pub fn HasOne(comptime Child: type, comptime fk_field: []const u8) type {
     };
 }
 
+/// Metadata for has_many relationship
+/// Example: User has_many Posts via user_id in posts table
+pub fn HasMany(comptime Child: type, comptime fk_field: []const u8) type {
+    return struct {
+        pub const RelatedTable = Child;
+        pub const foreign_key_field = fk_field;
+    };
+}
+
 test "relation metadata" {
     const User = struct { id: i64, name: []const u8 };
     const Profile = struct { id: i64, user_id: i64, bio: []const u8 };
