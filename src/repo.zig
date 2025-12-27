@@ -68,6 +68,16 @@ pub fn Repo(comptime Adapter: type) type {
                 }
             }
 
+            var bind_idx = q.params.items.len;
+            if (q.limit_val) |lim| {
+                try stmt.bind_int(bind_idx, @intCast(lim));
+                bind_idx += 1;
+            }
+            if (q.offset_val) |off| {
+                try stmt.bind_int(bind_idx, @intCast(off));
+                bind_idx += 1;
+            }
+
             var results = try std.ArrayList(T).initCapacity(self.allocator, 0);
 
             errdefer results.deinit(self.allocator);

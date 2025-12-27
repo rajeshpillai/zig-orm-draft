@@ -76,8 +76,47 @@ test "repo insert and all integration" {
                 std.testing.allocator.free(u.name);
             }
         }
-
         try std.testing.expectEqual(1, users.len);
         try std.testing.expectEqualStrings("Alice", users[0].name);
+    }
+
+    // 4. Limit & Offset
+    {
+        // Test Limit
+        var q = try orm.from(Users, std.testing.allocator);
+        defer q.deinit();
+
+        _ = q.limit(1);
+
+        const results = try repo.all(q);
+        defer std.testing.allocator.free(results);
+        defer {
+            for (results) |u| {
+                std.testing.allocator.free(u.name);
+            }
+        }
+
+        try std.testing.expectEqual(@as(usize, 1), results.len);
+        try std.testing.expectEqualStrings("Alice", results[0].name);
+    }
+
+    {
+        // Test Offset
+        var q = try orm.from(Users, std.testing.allocator);
+        defer q.deinit();
+
+        // Offset 1, Limit 1 -> Should be Bob
+        _ = q.limit(1).offset(1);
+
+        const results = try repo.all(q);
+        defer std.testing.allocator.free(results);
+        defer {
+            for (results) |u| {
+                std.testing.allocator.free(u.name);
+            }
+        }
+
+        try std.testing.expectEqual(@as(usize, 1), results.len);
+        try std.testing.expectEqualStrings("Bob", results[0].name);
     }
 }

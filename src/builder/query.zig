@@ -9,6 +9,8 @@ pub fn Query(comptime TableT: type) type {
         allocator: std.mem.Allocator,
         params: std.ArrayList(core_types.Value),
         where_exprs: std.ArrayList(u8),
+        limit_val: ?u64 = null,
+        offset_val: ?u64 = null,
 
         pub fn init(allocator: std.mem.Allocator) !Self {
             return Self{
@@ -79,6 +81,16 @@ pub fn Query(comptime TableT: type) type {
             return self;
         }
 
+        pub fn limit(self: *Self, value: u64) *Self {
+            self.limit_val = value;
+            return self;
+        }
+
+        pub fn offset(self: *Self, value: u64) *Self {
+            self.offset_val = value;
+            return self;
+        }
+
         pub fn toSql(self: Self, allocator: std.mem.Allocator) ![:0]u8 {
             var list = try std.ArrayList(u8).initCapacity(allocator, 0);
             errdefer list.deinit(allocator);
@@ -96,6 +108,14 @@ pub fn Query(comptime TableT: type) type {
             if (self.where_exprs.items.len > 0) {
                 try list.appendSlice(allocator, " WHERE ");
                 try list.appendSlice(allocator, self.where_exprs.items);
+            }
+
+            if (self.limit_val) |_| {
+                try list.appendSlice(allocator, " LIMIT ?");
+            }
+
+            if (self.offset_val) |_| {
+                try list.appendSlice(allocator, " OFFSET ?");
             }
 
             return try list.toOwnedSliceSentinel(allocator, 0);
