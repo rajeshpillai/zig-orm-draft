@@ -114,3 +114,32 @@ const all_posts = try repo.all(q);
 
 *   **Driver-agnostic core**: Separation between Builder/Schema and Adapter.
 *   **Think “typed SQL builder + mapper”**: Not a full object graph manager.
+## Migrations
+
+Schema versioning with up/down migrations:
+
+```zig
+// Define migration functions
+pub fn up_001(db_ptr: *anyopaque) !void {
+    const db: *orm.sqlite.SQLite = @ptrCast(@alignCast(db_ptr));
+    try db.exec(
+        \\CREATE TABLE users (
+        \\    id BIGINT PRIMARY KEY,
+        \\    name TEXT NOT NULL
+        \\)
+    );
+}
+
+pub fn down_001(db_ptr: *anyopaque) !void {
+    const db: *orm.sqlite.SQLite = @ptrCast(@alignCast(db_ptr));
+    try db.exec("DROP TABLE users");
+}
+
+// Run migrations
+const migrations = [_]orm.migrations.Migration{
+    .{ .version = 1, .name = "create_users", .up = &up_001, .down = &down_001 },
+};
+
+var runner = orm.migrations.MigrationRunner(orm.sqlite.SQLite).init(&db, allocator);
+try runner.migrate(&migrations);
+```
