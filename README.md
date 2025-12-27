@@ -48,19 +48,20 @@ var repo = try Repo.init(allocator, "path/to/db.sqlite");
 defer repo.deinit();
 ```
 
-### 3. Insert and Query
+### 3. CRUD Operations
 
 ```zig
 // Insert
 var changeset = try Users.insert(allocator);
 defer changeset.deinit();
 try changeset.add(.{ .id = 1, .name = "Alice", .active = true });
-
 try repo.insert(changeset);
 
-// Query
-const q = orm.from(Users); 
-// Future: .where(.{ .active = true })
+// Select with filters
+var q = try orm.from(Users, allocator);
+defer q.deinit();
+_ = try q.where(.{ .active = true });
+_ = q.limit(10).offset(0);
 
 const users = try repo.all(q);
 defer allocator.free(users);
@@ -68,9 +69,24 @@ defer {
     for (users) |u| allocator.free(u.name);
 }
 
-for (users) |user| {
-    std.debug.print("User: {s}\n", .{user.name});
-}
+// Update
+var u = try Users.update(allocator);
+defer u.deinit();
+_ = try u.set(.{ .active = false });
+_ = try u.where(.{ .name = "Alice" });
+try repo.update(u);
+
+// Delete
+var d = try Users.delete(allocator);
+defer d.deinit();
+_ = try d.where(.{ .active = false });
+try repo.delete(d);
+
+// Transactions
+try repo.begin();
+errdefer repo.rollback() catch {};
+// ... operations ...
+try repo.commit();
 ```
 
 ## Design Principles
