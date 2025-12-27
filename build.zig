@@ -72,4 +72,18 @@ pub fn build(b: *std.Build) void {
 
     const run_preload_tests = b.addRunArtifact(preload_tests);
     test_step.dependOn(&run_preload_tests.step);
+
+    // Many-to-Many tests
+    const m2m_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/many_to_many_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    m2m_tests.root_module.addImport("zig-orm", mod);
+    m2m_tests.linkLibC();
+
+    const run_m2m_tests = b.addRunArtifact(m2m_tests);
+    test_step.dependOn(&run_m2m_tests.step);
 }

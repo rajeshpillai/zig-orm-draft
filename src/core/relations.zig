@@ -27,6 +27,22 @@ pub fn HasMany(comptime Child: type, comptime fk_field: []const u8) type {
     };
 }
 
+/// Metadata for many_to_many relationship
+/// Example: Student many_to_many Courses through Enrollments
+pub fn ManyToMany(
+    comptime Related: type,
+    comptime JoinTable: type,
+    comptime fk_self: []const u8,
+    comptime fk_related: []const u8,
+) type {
+    return struct {
+        pub const RelatedTable = Related;
+        pub const JoinTableType = JoinTable;
+        pub const foreign_key_self = fk_self;
+        pub const foreign_key_related = fk_related;
+    };
+}
+
 test "relation metadata" {
     const User = struct { id: i64, name: []const u8 };
     const Profile = struct { id: i64, user_id: i64, bio: []const u8 };
