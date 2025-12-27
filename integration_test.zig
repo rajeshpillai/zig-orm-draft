@@ -31,10 +31,12 @@ test "repo insert and all integration" {
 
     // 2. Select All
     {
-        // Seed data using raw SQL to verify Mapping (since insert bindings aren't ready)
-        try repo.adapter.exec("DELETE FROM users");
-        try repo.adapter.exec("INSERT INTO users (id, name, active) VALUES (1, 'Alice', 1)");
-        try repo.adapter.exec("INSERT INTO users (id, name, active) VALUES (2, 'Bob', 0)");
+        // Data seeded in block 1 via repo.insert should persist if we didn't clear it.
+        // Wait, default SQLite :memory: is shared?
+        // No, ":memory:" is private per connection.
+        // But `repo` is the same instance? Yes, declared at line 14.
+        // So inserts from block 1 are still there.
+        // Just query them.
 
         const q = orm.from(Users);
 

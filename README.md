@@ -9,6 +9,7 @@ A typed, compile-time schema ORM for Zig, inspired by Elixir Ecto. Supports SQLi
 *   **No runtime reflection**: Schema defined at compile-time.
 *   **Repo Pattern**: Ecto-style `Repo` for database interactions.
 *   **Explicit SQL**: Typed query builder (`from`, `where`, `insert`).
+*   **Secure**: Automatic parameter binding for `insert` and queries.
 *   **Embedded SQLite**: Zero-dependency build (bundles `sqlite3.c`).
 
 ## Installation

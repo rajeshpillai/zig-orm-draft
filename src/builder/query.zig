@@ -41,7 +41,9 @@ pub fn from(comptime TableT: type) Query(TableT) {
 
 pub fn Insert(comptime TableT: type) type {
     return struct {
+        pub const Table = TableT;
         const Self = @This();
+
         items: std.ArrayList(TableT.model_type),
         allocator: std.mem.Allocator,
 
@@ -58,6 +60,31 @@ pub fn Insert(comptime TableT: type) type {
 
         pub fn add(self: *Self, item: TableT.model_type) !void {
             try self.items.append(self.allocator, item);
+        }
+
+        pub fn toStatementSql(self: Self) ![:0]u8 {
+            // Generates a single-row INSERT statement: "INSERT INTO table (col1, col2) VALUES (?, ?)"
+            var list = try std.ArrayList(u8).initCapacity(self.allocator, 0);
+            errdefer list.deinit(self.allocator);
+
+            try list.appendSlice(self.allocator, "INSERT INTO ");
+            try list.appendSlice(self.allocator, TableT.table_name);
+            try list.appendSlice(self.allocator, " (");
+
+            inline for (TableT.columns, 0..) |col, i| {
+                if (i > 0) try list.appendSlice(self.allocator, ", ");
+                try list.appendSlice(self.allocator, col.name);
+            }
+            try list.appendSlice(self.allocator, ") VALUES (");
+
+            inline for (TableT.columns, 0..) |col, i| {
+                _ = col;
+                if (i > 0) try list.appendSlice(self.allocator, ", ");
+                try list.appendSlice(self.allocator, "?");
+            }
+            try list.appendSlice(self.allocator, ")");
+
+            return try list.toOwnedSliceSentinel(self.allocator, 0);
         }
 
         pub fn toSql(self: Self) ![:0]u8 {

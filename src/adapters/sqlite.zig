@@ -38,6 +38,24 @@ pub const SQLite = struct {
             if (rc == c.SQLITE_DONE) return false;
             return error.SQLiteStepError;
         }
+
+        pub fn reset(self: *Stmt) !void {
+            const rc = c.sqlite3_reset(self.stmt);
+            if (rc != c.SQLITE_OK) return error.SQLiteResetError;
+        }
+
+        pub fn bind_int(self: *Stmt, idx: usize, val: i64) !void {
+            // sqlite bind index is 1-based
+            const rc = c.sqlite3_bind_int64(self.stmt, @intCast(idx + 1), val);
+            if (rc != c.SQLITE_OK) return error.SQLiteBindError;
+        }
+
+        pub fn bind_text(self: *Stmt, idx: usize, val: []const u8) !void {
+            // SQLITE_TRANSIENT (-1) causes SQLite to copy the string, safe for our usage.
+            const SQLITE_TRANSIENT = @as(c.sqlite3_destructor_type, @ptrFromInt(@as(u64, @bitCast(@as(i64, -1)))));
+            const rc = c.sqlite3_bind_text(self.stmt, @intCast(idx + 1), val.ptr, @intCast(val.len), SQLITE_TRANSIENT);
+            if (rc != c.SQLITE_OK) return error.SQLiteBindError;
+        }
     };
 
     pub fn prepare(self: *Self, sql: [:0]const u8) !Stmt {

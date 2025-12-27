@@ -21,13 +21,31 @@ pub fn Repo(comptime Adapter: type) type {
         }
 
         pub fn insert(self: *Self, q: anytype) !void {
-            const sql = try q.toSql();
+            if (q.items.items.len == 0) return;
+
+            const sql = try q.toStatementSql();
             defer self.allocator.free(sql);
 
             var stmt = try self.adapter.prepare(sql);
             defer stmt.deinit();
 
-            _ = try stmt.step();
+            const Cols = @TypeOf(q).Table.columns;
+
+            for (q.items.items) |item| {
+                try stmt.reset();
+
+                inline for (Cols, 0..) |col, i| {
+                    const val = @field(item, col.name);
+                    switch (col.type) {
+                        .Integer => try stmt.bind_int(i, @intCast(val)),
+                        .Text => try stmt.bind_text(i, val),
+                        .Boolean => try stmt.bind_int(i, if (val) 1 else 0),
+                        else => return error.UnsupportedTypeBinding,
+                    }
+                }
+
+                _ = try stmt.step();
+            }
         }
 
         pub fn all(self: *Self, q: anytype) ![]@TypeOf(q).Table.model_type {
