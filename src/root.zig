@@ -11,6 +11,7 @@ pub const Query = query.Query;
 pub const Table = schema.Table;
 pub const ConnectionPool = @import("pool.zig").ConnectionPool;
 pub const migrations = @import("migrations/runner.zig");
+pub const validation = @import("validation/validator.zig");
 
 test {
     _ = sqlite;
@@ -18,4 +19,5 @@ test {
     _ = schema;
     _ = query;
     _ = @import("pool.zig");
+    _ = @import("validation/validator.zig");
 }
