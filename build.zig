@@ -113,4 +113,18 @@ pub fn build(b: *std.Build) void {
 
     const run_postgres_tests = b.addRunArtifact(postgres_tests);
     test_step.dependOn(&run_postgres_tests.step);
+
+    // Migrations tests
+    const migrations_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/migrations_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    migrations_tests.root_module.addImport("zig-orm", mod);
+    migrations_tests.linkLibC();
+
+    const run_migrations_tests = b.addRunArtifact(migrations_tests);
+    test_step.dependOn(&run_migrations_tests.step);
 }

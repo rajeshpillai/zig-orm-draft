@@ -10,6 +10,7 @@ pub const from = query.from;
 pub const Query = query.Query;
 pub const Table = schema.Table;
 pub const ConnectionPool = @import("pool.zig").ConnectionPool;
+pub const migrations = @import("migrations/runner.zig");
 
 test {
     _ = sqlite;
