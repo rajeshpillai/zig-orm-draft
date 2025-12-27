@@ -81,6 +81,27 @@ pub fn Query(comptime TableT: type) type {
             return self;
         }
 
+        /// Add WHERE field IN (?, ?, ...) clause
+        pub fn whereIn(self: *Self, comptime field: []const u8, values: []const i64) !*Self {
+            if (values.len == 0) return self;
+
+            if (self.where_exprs.items.len > 0) {
+                try self.where_exprs.appendSlice(self.allocator, " AND ");
+            }
+
+            try self.where_exprs.appendSlice(self.allocator, field);
+            try self.where_exprs.appendSlice(self.allocator, " IN (");
+
+            for (values, 0..) |val, i| {
+                if (i > 0) try self.where_exprs.appendSlice(self.allocator, ", ");
+                try self.where_exprs.appendSlice(self.allocator, "?");
+                try self.params.append(self.allocator, .{ .Integer = val });
+            }
+
+            try self.where_exprs.appendSlice(self.allocator, ")");
+            return self;
+        }
+
         pub fn limit(self: *Self, value: u64) *Self {
             self.limit_val = value;
             return self;

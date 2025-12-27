@@ -58,4 +58,18 @@ pub fn build(b: *std.Build) void {
 
     const run_relations_tests = b.addRunArtifact(relations_tests);
     test_step.dependOn(&run_relations_tests.step);
+
+    // Preload tests
+    const preload_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/preload_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    preload_tests.root_module.addImport("zig-orm", mod);
+    preload_tests.linkLibC();
+
+    const run_preload_tests = b.addRunArtifact(preload_tests);
+    test_step.dependOn(&run_preload_tests.step);
 }
