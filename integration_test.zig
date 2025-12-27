@@ -119,4 +119,57 @@ test "repo insert and all integration" {
         try std.testing.expectEqual(@as(usize, 1), results.len);
         try std.testing.expectEqualStrings("Bob", results[0].name);
     }
+
+    // 5. Transactions - Rollback
+    {
+        try repo.begin();
+        errdefer repo.rollback() catch {};
+
+        var q = try Users.insert(std.testing.allocator);
+        defer q.deinit();
+        try q.add(.{ .id = 3, .name = "Charlie", .active = true });
+        try repo.insert(q);
+
+        try repo.rollback();
+
+        // Verify Charlie is NOT there
+        var q_check = try orm.from(Users, std.testing.allocator);
+        defer q_check.deinit();
+        _ = try q_check.where(.{ .name = "Charlie" });
+
+        const results = try repo.all(q_check);
+        defer std.testing.allocator.free(results);
+        defer {
+            for (results) |u| std.testing.allocator.free(u.name);
+        }
+
+        try std.testing.expectEqual(@as(usize, 0), results.len);
+    }
+
+    // 6. Transactions - Commit
+    {
+        try repo.begin();
+        errdefer repo.rollback() catch {};
+
+        var q = try Users.insert(std.testing.allocator);
+        defer q.deinit();
+        try q.add(.{ .id = 4, .name = "Dave", .active = true });
+        try repo.insert(q);
+
+        try repo.commit();
+
+        // Verify Dave IS there
+        var q_check = try orm.from(Users, std.testing.allocator);
+        defer q_check.deinit();
+        _ = try q_check.where(.{ .name = "Dave" });
+
+        const results = try repo.all(q_check);
+        defer std.testing.allocator.free(results);
+        defer {
+            for (results) |u| std.testing.allocator.free(u.name);
+        }
+
+        try std.testing.expectEqual(@as(usize, 1), results.len);
+        try std.testing.expectEqualStrings("Dave", results[0].name);
+    }
 }

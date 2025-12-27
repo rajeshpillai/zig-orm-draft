@@ -20,6 +20,18 @@ pub fn Repo(comptime Adapter: type) type {
             self.adapter.deinit();
         }
 
+        pub fn begin(self: *Self) !void {
+            try self.adapter.exec("BEGIN");
+        }
+
+        pub fn commit(self: *Self) !void {
+            try self.adapter.exec("COMMIT");
+        }
+
+        pub fn rollback(self: *Self) !void {
+            try self.adapter.exec("ROLLBACK");
+        }
+
         pub fn insert(self: *Self, q: anytype) !void {
             if (q.items.items.len == 0) return;
 
