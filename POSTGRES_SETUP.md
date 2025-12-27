@@ -11,9 +11,10 @@
 2. Install PostgreSQL (default port 5432)
 3. Add PostgreSQL bin directory to PATH:
    ```
-   C:\Program Files\PostgreSQL\16\bin
-   C:\Program Files\PostgreSQL\16\lib
+   D:\Program Files\PostgreSQL\18\bin
+   D:\Program Files\PostgreSQL\18\lib
    ```
+   *(Note: The `bin/` directory in the repository root also contains necessary DLLs for runtime if they are not in your system PATH).*
 4. Set environment variables (optional):
    ```
    PGHOST=localhost
@@ -28,9 +29,9 @@ The build.zig will need to be updated to link against libpq once PostgreSQL is i
 ```zig
 // Add to build.zig after mod setup
 if (target.result.os.tag == .windows) {
-    mod.addIncludePath(.{ .cwd_relative = "C:/Program Files/PostgreSQL/16/include" });
-    mod.addLibraryPath(.{ .cwd_relative = "C:/Program Files/PostgreSQL/16/lib" });
-    mod.linkSystemLibrary("libpq");
+    mod.addIncludePath(.{ .cwd_relative = "D:/Program Files/PostgreSQL/18/include" });
+    mod.addLibraryPath(.{ .cwd_relative = "D:/Program Files/PostgreSQL/18/lib" });
+    mod.linkSystemLibrary("libpq", .{});
 }
 ```
 
