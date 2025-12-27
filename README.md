@@ -1,5 +1,8 @@
 # Zig ORM
 
+Zig Version: 0.16.0-dev.1326+2e6f7d36b
+
+
 **Status**: Experimental / Pre-alpha
 
 A typed, compile-time schema ORM for Zig, inspired by Elixir Ecto. Supports SQLite (embedded).
