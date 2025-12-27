@@ -2,8 +2,8 @@ const std = @import("std");
 
 pub fn Query(comptime TableT: type) type {
     return struct {
+        pub const Table = TableT;
         const Self = @This();
-        // Future: where_clauses, limit_val, etc.
 
         pub fn init() Self {
             return .{};
@@ -16,7 +16,7 @@ pub fn Query(comptime TableT: type) type {
             return .{};
         }
 
-        pub fn toSql(self: Self, allocator: std.mem.Allocator) ![]u8 {
+        pub fn toSql(self: Self, allocator: std.mem.Allocator) ![:0]u8 {
             _ = self;
             var list = try std.ArrayList(u8).initCapacity(allocator, 0);
             errdefer list.deinit(allocator);
@@ -30,7 +30,7 @@ pub fn Query(comptime TableT: type) type {
 
             try list.appendSlice(allocator, " FROM ");
             try list.appendSlice(allocator, TableT.table_name);
-            return list.toOwnedSlice(allocator);
+            return try list.toOwnedSliceSentinel(allocator, 0);
         }
     };
 }
@@ -60,7 +60,7 @@ pub fn Insert(comptime TableT: type) type {
             try self.items.append(self.allocator, item);
         }
 
-        pub fn toSql(self: Self) ![]u8 {
+        pub fn toSql(self: Self) ![:0]u8 {
             if (self.items.items.len == 0) return error.NoItemsToInsert;
 
             var list = try std.ArrayList(u8).initCapacity(self.allocator, 0);
@@ -77,7 +77,7 @@ pub fn Insert(comptime TableT: type) type {
             try list.appendSlice(self.allocator, ") VALUES ");
 
             for (self.items.items, 0..) |item, row_idx| {
-                _ = item; // Value binding to be implemented
+                _ = item;
                 if (row_idx > 0) try list.appendSlice(self.allocator, ", ");
                 try list.appendSlice(self.allocator, "(");
 
@@ -89,7 +89,7 @@ pub fn Insert(comptime TableT: type) type {
                 try list.appendSlice(self.allocator, ")");
             }
 
-            return list.toOwnedSlice(self.allocator);
+            return try list.toOwnedSliceSentinel(self.allocator, 0);
         }
     };
 }

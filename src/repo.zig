@@ -1,4 +1,5 @@
 const std = @import("std");
+const query = @import("builder/query.zig");
 
 pub fn Repo(comptime Adapter: type) type {
     return struct {
@@ -19,7 +20,60 @@ pub fn Repo(comptime Adapter: type) type {
             self.adapter.deinit();
         }
 
-        // Placeholder for future execution logic
-        // pub fn all(self: *Self, query: anytype) ![]T { ... }
+        pub fn insert(self: *Self, q: anytype) !void {
+            const sql = try q.toSql();
+            defer self.allocator.free(sql);
+
+            var stmt = try self.adapter.prepare(sql);
+            defer stmt.deinit();
+
+            _ = try stmt.step();
+        }
+
+        pub fn all(self: *Self, q: anytype) ![]@TypeOf(q).Table.model_type {
+            const T = @TypeOf(q).Table.model_type;
+            const sql = try q.toSql(self.allocator);
+            defer self.allocator.free(sql);
+
+            var stmt = try self.adapter.prepare(sql);
+            defer stmt.deinit();
+
+            var results = try std.ArrayList(T).initCapacity(self.allocator, 0);
+
+            errdefer results.deinit(self.allocator);
+
+            while (try stmt.step()) {
+                var item: T = undefined;
+
+                inline for (@TypeOf(q).Table.columns, 0..) |col, i| {
+                    switch (col.type) {
+                        .Integer => {
+                            const val = Adapter.column_int(&stmt, i);
+                            @field(item, col.name) = @intCast(val);
+                        },
+                        .Text => {
+                            const val_opt = Adapter.column_text(&stmt, i);
+                            if (val_opt) |val| {
+                                @field(item, col.name) = try self.allocator.dupe(u8, val);
+                            } else {
+                                @field(item, col.name) = ""; // Empty string for null?
+                            }
+                        },
+                        .Boolean => {
+                            const val = Adapter.column_int(&stmt, i);
+                            @field(item, col.name) = (val != 0);
+                        },
+                        // Missing: Float, Blob
+                        else => {
+                            // Ignore others for now or verify in schema matches
+                            // compilation error for unsupported?
+                            return error.UnsupportedTypeMapping;
+                        },
+                    }
+                }
+                try results.append(self.allocator, item);
+            }
+            return results.toOwnedSlice(self.allocator);
+        }
     };
 }

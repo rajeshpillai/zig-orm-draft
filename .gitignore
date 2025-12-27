@@ -8,6 +8,8 @@ zig-out/**/*
 
 node_modules
 
+error*.txt
+
 *.dll
 *.obj
 *.lib
