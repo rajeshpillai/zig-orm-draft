@@ -70,8 +70,10 @@ test "explicit sql" {
     const Users = Table(User, "users");
 
     // Select with `from`
-    var val = query.from(Users);
+    var val = try query.from(Users, std.testing.allocator);
+    defer val.deinit();
     const sql = try val.toSql(std.testing.allocator);
+
     defer std.testing.allocator.free(sql);
     try std.testing.expectEqualStrings("SELECT id, name, active FROM users", sql);
 

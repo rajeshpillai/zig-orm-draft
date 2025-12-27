@@ -40,7 +40,7 @@ pub fn Repo(comptime Adapter: type) type {
                         .Integer => try stmt.bind_int(i, @intCast(val)),
                         .Text => try stmt.bind_text(i, val),
                         .Boolean => try stmt.bind_int(i, if (val) 1 else 0),
-                        else => return error.UnsupportedTypeBinding,
+                        .Float, .Blob => return error.UnsupportedTypeBinding,
                     }
                 }
 
@@ -55,6 +55,18 @@ pub fn Repo(comptime Adapter: type) type {
 
             var stmt = try self.adapter.prepare(sql);
             defer stmt.deinit();
+
+            // Bind WHERE clause parameters
+            // q.params is ArrayList(Value) where Value = union(enum) { Integer: i64, Text: []const u8, Boolean: bool }
+
+            for (q.params.items, 0..) |param, i| {
+                switch (param) {
+                    .Integer => |val| try stmt.bind_int(i, val),
+                    .Text => |val| try stmt.bind_text(i, val),
+                    .Boolean => |val| try stmt.bind_int(i, if (val) 1 else 0),
+                    .Float, .Blob => return error.UnsupportedTypeBinding,
+                }
+            }
 
             var results = try std.ArrayList(T).initCapacity(self.allocator, 0);
 

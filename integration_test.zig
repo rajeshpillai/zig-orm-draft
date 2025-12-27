@@ -38,7 +38,8 @@ test "repo insert and all integration" {
         // So inserts from block 1 are still there.
         // Just query them.
 
-        const q = orm.from(Users);
+        var q = try orm.from(Users, std.testing.allocator);
+        defer q.deinit();
 
         const users = try repo.all(q);
         defer std.testing.allocator.free(users);
@@ -59,5 +60,24 @@ test "repo insert and all integration" {
         try std.testing.expectEqual(2, users[1].id);
         try std.testing.expectEqualStrings("Bob", users[1].name);
         try std.testing.expectEqual(false, users[1].active);
+    }
+
+    // 3. Select Where
+    {
+        var q = try orm.from(Users, std.testing.allocator);
+        defer q.deinit();
+
+        _ = try q.where(.{ .name = "Alice" });
+
+        const users = try repo.all(q);
+        defer std.testing.allocator.free(users);
+        defer {
+            for (users) |u| {
+                std.testing.allocator.free(u.name);
+            }
+        }
+
+        try std.testing.expectEqual(1, users.len);
+        try std.testing.expectEqualStrings("Alice", users[0].name);
     }
 }

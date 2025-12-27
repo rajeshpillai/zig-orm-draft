@@ -1,7 +1,6 @@
 const std = @import("std");
 
-/// Core types supported by the ORM
-pub const Type = union(enum) {
+pub const Type = enum {
     Integer,
     Float,
     Text,
@@ -9,7 +8,15 @@ pub const Type = union(enum) {
     Blob,
 };
 
-test "core types" {
+pub const Value = union(Type) {
+    Integer: i64,
+    Float: f64,
+    Text: []const u8,
+    Boolean: bool,
+    Blob: []const u8,
+};
+
+test "Type enum" {
     const t = Type.Integer;
-    try std.testing.expect(t == .Integer);
+    try std.testing.expectEqual(Type.Integer, t);
 }
