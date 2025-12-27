@@ -98,6 +98,22 @@ pub fn Repo(comptime Adapter: type) type {
             _ = try stmt.step();
         }
 
+        /// Find a single record by condition, returns null if not found
+        pub fn findBy(self: *Self, comptime TableT: type, condition: anytype) !?TableT.model_type {
+            var q = try query.from(TableT, self.allocator);
+            defer q.deinit();
+            _ = try q.where(condition);
+            _ = q.limit(1);
+
+            const results = try self.all(q);
+            defer self.allocator.free(results);
+
+            if (results.len == 0) return null;
+
+            // Return first result (need to dupe strings to avoid use-after-free)
+            return results[0];
+        }
+
         pub fn all(self: *Self, q: anytype) ![]@TypeOf(q).Table.model_type {
             const T = @TypeOf(q).Table.model_type;
             const sql = try q.toSql(self.allocator);
