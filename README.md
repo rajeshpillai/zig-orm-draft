@@ -89,6 +89,24 @@ errdefer repo.rollback() catch {};
 try repo.commit();
 ```
 
+### 4. Relationships
+
+```zig
+// One-to-One: Load profile for user
+const profile = try repo.findBy(Profiles, .{ .user_id = user.id });
+
+// One-to-Many: Load all posts for user
+const posts = try repo.findAllBy(Posts, .{ .user_id = user.id });
+defer allocator.free(posts);
+
+// N+1 Elimination: Batch load posts for multiple users
+const user_ids = [_]i64{ 1, 2, 3 };
+var q = try orm.from(Posts, allocator);
+defer q.deinit();
+_ = try q.whereIn("user_id", &user_ids);
+const all_posts = try repo.all(q);
+```
+
 ## Design Principles
 
 *   **Driver-agnostic core**: Separation between Builder/Schema and Adapter.
