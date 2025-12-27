@@ -1,6 +1,7 @@
 const std = @import("std");
 
 pub const sqlite = @import("adapters/sqlite.zig");
+pub const postgres = @import("adapters/postgres.zig");
 pub const types = @import("core/types.zig");
 pub const schema = @import("core/schema.zig");
 pub const query = @import("builder/query.zig");

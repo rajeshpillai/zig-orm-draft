@@ -16,6 +16,19 @@ pub fn build(b: *std.Build) void {
     });
     mod.addIncludePath(b.path("src/c"));
 
+    // PostgreSQL support (libpq)
+    // Note: Requires PostgreSQL to be installed
+    // Windows: D:\Program Files\PostgreSQL\18\
+    if (target.result.os.tag == .windows) {
+        mod.addIncludePath(.{ .cwd_relative = "D:/Program Files/PostgreSQL/18/include" });
+        mod.addLibraryPath(.{ .cwd_relative = "D:/Program Files/PostgreSQL/18/lib" });
+        mod.linkSystemLibrary("libpq", .{});
+    } else if (target.result.os.tag == .linux) {
+        mod.linkSystemLibrary("pq", .{});
+    } else if (target.result.os.tag == .macos) {
+        mod.linkSystemLibrary("pq", .{});
+    }
+
     // Library tests
     const lib_unit_tests = b.addTest(.{
         .root_module = mod,
@@ -86,4 +99,18 @@ pub fn build(b: *std.Build) void {
 
     const run_m2m_tests = b.addRunArtifact(m2m_tests);
     test_step.dependOn(&run_m2m_tests.step);
+
+    // PostgreSQL tests (optional - requires PostgreSQL installation)
+    const postgres_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/postgres_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    postgres_tests.root_module.addImport("zig-orm", mod);
+    postgres_tests.linkLibC();
+
+    const run_postgres_tests = b.addRunArtifact(postgres_tests);
+    test_step.dependOn(&run_postgres_tests.step);
 }
