@@ -207,3 +207,238 @@ pub fn Insert(comptime TableT: type) type {
         }
     };
 }
+
+pub fn Update(comptime TableT: type) type {
+    return struct {
+        pub const Table = TableT;
+        const Self = @This();
+
+        allocator: std.mem.Allocator,
+        params: std.ArrayList(core_types.Value),
+        set_exprs: std.ArrayList(u8),
+        where_exprs: std.ArrayList(u8),
+
+        pub fn init(allocator: std.mem.Allocator) !Self {
+            return .{
+                .allocator = allocator,
+                .params = try std.ArrayList(core_types.Value).initCapacity(allocator, 0),
+                .set_exprs = try std.ArrayList(u8).initCapacity(allocator, 0),
+                .where_exprs = try std.ArrayList(u8).initCapacity(allocator, 0),
+            };
+        }
+
+        pub fn deinit(self: *Self) void {
+            self.params.deinit(self.allocator);
+            self.set_exprs.deinit(self.allocator);
+            self.where_exprs.deinit(self.allocator);
+        }
+
+        pub fn set(self: *Self, values: anytype) !*Self {
+            const T = @TypeOf(values);
+            const info = @typeInfo(T);
+
+            if (info != .@"struct") @compileError("Values must be a struct");
+
+            inline for (info.@"struct".fields) |field| {
+                if (self.set_exprs.items.len > 0) {
+                    try self.set_exprs.appendSlice(self.allocator, ", ");
+                }
+
+                try self.set_exprs.appendSlice(self.allocator, field.name);
+                try self.set_exprs.appendSlice(self.allocator, " = ?");
+
+                const val = @field(values, field.name);
+                const val_t = @TypeOf(val);
+
+                // Improved type handling
+                const type_info = @typeInfo(val_t);
+                var handled = false;
+
+                if (type_info == .pointer) {
+                    const ptr_info = type_info.pointer;
+                    if (ptr_info.size == .one) {
+                        const child_info = @typeInfo(ptr_info.child);
+                        if (child_info == .array) {
+                            if (child_info.array.child == u8) {
+                                const slice: []const u8 = val;
+                                try self.params.append(self.allocator, .{ .Text = slice });
+                                handled = true;
+                            }
+                        }
+                    }
+                }
+
+                if (!handled) {
+                    if (val_t == []const u8 or val_t == [:0]const u8) {
+                        try self.params.append(self.allocator, .{ .Text = val });
+                    } else if (val_t == i64 or val_t == i32 or val_t == comptime_int) {
+                        try self.params.append(self.allocator, .{ .Integer = @intCast(val) });
+                    } else if (val_t == bool) {
+                        try self.params.append(self.allocator, .{ .Boolean = val });
+                    } else {
+                        return error.UnsupportedTypeInUpdate;
+                    }
+                }
+            }
+            return self;
+        }
+
+        pub fn where(self: *Self, condition: anytype) !*Self {
+            // Reuse logic? Or copy-paste for speed safely?
+            // Copy-paste safely for now to avoid cross-dependency complexity in immediate step
+            const T = @TypeOf(condition);
+            const info = @typeInfo(T);
+
+            if (info != .@"struct") @compileError("Condition must be a struct");
+
+            inline for (info.@"struct".fields) |field| {
+                if (self.where_exprs.items.len > 0) {
+                    try self.where_exprs.appendSlice(self.allocator, " AND ");
+                }
+
+                try self.where_exprs.appendSlice(self.allocator, field.name);
+                try self.where_exprs.appendSlice(self.allocator, " = ?");
+
+                const val = @field(condition, field.name);
+                const val_t = @TypeOf(val);
+
+                // Improved type handling
+                const type_info = @typeInfo(val_t);
+                var handled = false;
+
+                if (type_info == .pointer) {
+                    const ptr_info = type_info.pointer;
+                    if (ptr_info.size == .one) {
+                        const child_info = @typeInfo(ptr_info.child);
+                        if (child_info == .array) {
+                            if (child_info.array.child == u8) {
+                                const slice: []const u8 = val;
+                                try self.params.append(self.allocator, .{ .Text = slice });
+                                handled = true;
+                            }
+                        }
+                    }
+                }
+
+                if (!handled) {
+                    if (val_t == []const u8 or val_t == [:0]const u8) {
+                        try self.params.append(self.allocator, .{ .Text = val });
+                    } else if (val_t == i64 or val_t == i32 or val_t == comptime_int) {
+                        try self.params.append(self.allocator, .{ .Integer = @intCast(val) });
+                    } else if (val_t == bool) {
+                        try self.params.append(self.allocator, .{ .Boolean = val });
+                    } else {
+                        return error.UnsupportedTypeInWhere;
+                    }
+                }
+            }
+            return self;
+        }
+
+        pub fn toSql(self: Self) ![:0]u8 {
+            var list = try std.ArrayList(u8).initCapacity(self.allocator, 0);
+            errdefer list.deinit(self.allocator);
+
+            try list.appendSlice(self.allocator, "UPDATE ");
+            try list.appendSlice(self.allocator, TableT.table_name);
+            try list.appendSlice(self.allocator, " SET ");
+            try list.appendSlice(self.allocator, self.set_exprs.items);
+
+            if (self.where_exprs.items.len > 0) {
+                try list.appendSlice(self.allocator, " WHERE ");
+                try list.appendSlice(self.allocator, self.where_exprs.items);
+            }
+
+            return try list.toOwnedSliceSentinel(self.allocator, 0);
+        }
+    };
+}
+
+pub fn Delete(comptime TableT: type) type {
+    return struct {
+        pub const Table = TableT;
+        const Self = @This();
+
+        allocator: std.mem.Allocator,
+        params: std.ArrayList(core_types.Value),
+        where_exprs: std.ArrayList(u8),
+
+        pub fn init(allocator: std.mem.Allocator) !Self {
+            return .{
+                .allocator = allocator,
+                .params = try std.ArrayList(core_types.Value).initCapacity(allocator, 0),
+                .where_exprs = try std.ArrayList(u8).initCapacity(allocator, 0),
+            };
+        }
+
+        pub fn deinit(self: *Self) void {
+            self.params.deinit(self.allocator);
+            self.where_exprs.deinit(self.allocator);
+        }
+
+        pub fn where(self: *Self, condition: anytype) !*Self {
+            const T = @TypeOf(condition);
+            const info = @typeInfo(T);
+
+            if (info != .@"struct") @compileError("Condition must be a struct");
+
+            inline for (info.@"struct".fields) |field| {
+                if (self.where_exprs.items.len > 0) {
+                    try self.where_exprs.appendSlice(self.allocator, " AND ");
+                }
+
+                try self.where_exprs.appendSlice(self.allocator, field.name);
+                try self.where_exprs.appendSlice(self.allocator, " = ?");
+
+                const val = @field(condition, field.name);
+                const val_t = @TypeOf(val);
+
+                // Improved type handling
+                const type_info = @typeInfo(val_t);
+                var handled = false;
+
+                if (type_info == .pointer) {
+                    const ptr_info = type_info.pointer;
+                    if (ptr_info.size == .one) {
+                        const child_info = @typeInfo(ptr_info.child);
+                        if (child_info == .array) {
+                            if (child_info.array.child == u8) {
+                                const slice: []const u8 = val;
+                                try self.params.append(self.allocator, .{ .Text = slice });
+                                handled = true;
+                            }
+                        }
+                    }
+                }
+
+                if (!handled) {
+                    if (val_t == []const u8 or val_t == [:0]const u8) {
+                        try self.params.append(self.allocator, .{ .Text = val });
+                    } else if (val_t == i64 or val_t == i32 or val_t == comptime_int) {
+                        try self.params.append(self.allocator, .{ .Integer = @intCast(val) });
+                    } else if (val_t == bool) {
+                        try self.params.append(self.allocator, .{ .Boolean = val });
+                    } else {
+                        return error.UnsupportedTypeInWhere;
+                    }
+                }
+            }
+            return self;
+        }
+
+        pub fn toSql(self: Self) ![:0]u8 {
+            var list = try std.ArrayList(u8).initCapacity(self.allocator, 0);
+            errdefer list.deinit(self.allocator);
+
+            try list.appendSlice(self.allocator, "DELETE FROM ");
+            try list.appendSlice(self.allocator, TableT.table_name);
+
+            if (self.where_exprs.items.len > 0) {
+                try list.appendSlice(self.allocator, " WHERE ");
+                try list.appendSlice(self.allocator, self.where_exprs.items);
+            }
+
+            return try list.toOwnedSliceSentinel(self.allocator, 0);
+        }
+    };
+}

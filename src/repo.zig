@@ -60,6 +60,44 @@ pub fn Repo(comptime Adapter: type) type {
             }
         }
 
+        pub fn update(self: *Self, q: anytype) !void {
+            const sql = try q.toSql();
+            defer self.allocator.free(sql);
+
+            var stmt = try self.adapter.prepare(sql);
+            defer stmt.deinit();
+
+            // Bind params
+            for (q.params.items, 0..) |param, i| {
+                switch (param) {
+                    .Integer => |val| try stmt.bind_int(i, val),
+                    .Text => |val| try stmt.bind_text(i, val),
+                    .Boolean => |val| try stmt.bind_int(i, if (val) 1 else 0),
+                    .Float, .Blob => return error.UnsupportedTypeBinding,
+                }
+            }
+            _ = try stmt.step();
+        }
+
+        pub fn delete(self: *Self, q: anytype) !void {
+            const sql = try q.toSql();
+            defer self.allocator.free(sql);
+
+            var stmt = try self.adapter.prepare(sql);
+            defer stmt.deinit();
+
+            // Bind params
+            for (q.params.items, 0..) |param, i| {
+                switch (param) {
+                    .Integer => |val| try stmt.bind_int(i, val),
+                    .Text => |val| try stmt.bind_text(i, val),
+                    .Boolean => |val| try stmt.bind_int(i, if (val) 1 else 0),
+                    .Float, .Blob => return error.UnsupportedTypeBinding,
+                }
+            }
+            _ = try stmt.step();
+        }
+
         pub fn all(self: *Self, q: anytype) ![]@TypeOf(q).Table.model_type {
             const T = @TypeOf(q).Table.model_type;
             const sql = try q.toSql(self.allocator);

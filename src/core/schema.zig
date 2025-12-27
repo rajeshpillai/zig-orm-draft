@@ -18,6 +18,14 @@ pub fn Table(comptime T: type, comptime name: []const u8) type {
         pub fn insert(allocator: std.mem.Allocator) !query.Insert(Self) {
             return try query.Insert(Self).init(allocator);
         }
+
+        pub fn update(allocator: std.mem.Allocator) !query.Update(Self) {
+            return try query.Update(Self).init(allocator);
+        }
+
+        pub fn delete(allocator: std.mem.Allocator) !query.Delete(Self) {
+            return try query.Delete(Self).init(allocator);
+        }
     };
 }
 
