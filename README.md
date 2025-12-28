@@ -280,6 +280,9 @@ zig build run -- help
 # Generate a new timestamped migration
 zig build run -- generate:migration create_users
 
+# Generate a Zig model struct from an existing table
+zig build run -- generate:model users
+
 # Run all pending migrations
 zig build run -- migrate
 

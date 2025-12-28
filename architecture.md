@@ -56,7 +56,7 @@ The main entry point for applications.
 *   [x] **Logging**: SQL execution logging with timing.
 *   [x] **Optimistic Locking**: Automatic version checking and incrementing.
 *   [x] **Connection Pooling**: Generic `Pool(Adapter)` implementation.
-*   [ ] **Model Generation**: CLI command to inspect DB and generate Zig structs.
+*   [x] **Model Generation**: CLI command to inspect DB and generate Zig structs.
 
 ---
 
