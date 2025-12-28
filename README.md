@@ -69,15 +69,29 @@ defer repo.deinit();
 ### 3. Connection Pooling
 
 ```zig
-const Pool = orm.ConnectionPool(orm.sqlite.SQLite);
-var pool = try Pool.init(allocator, .{
-    .connection_string = "test.db",
-    .max_connections = 10,
-});
-defer pool.deinit();
+const std = @import("std");
+const orm = @import("zig-orm");
+const PG = orm.postgres.PostgreSQL;
 
-const conn = try pool.acquire();
-defer pool.release(conn);
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const alloc = gpa.allocator();
+
+    // 1. Initialize Pool
+    var pool = try orm.Pool(PG).init(alloc, .{ .max_connections = 5 }, "postgresql://postgres:root123@localhost:5432/mydb");
+    defer pool.deinit();
+
+    // 2. Acquire a connection
+    var conn = try pool.acquire(); 
+    // conn is a PooledAdapter wrapper that automatically releases to pool on deinit()
+
+    // 3. Use with Repo
+    var repo = orm.Repo(orm.Pool(PG).PooledAdapter).initFromAdapter(alloc, conn);
+    defer repo.deinit(); // Releases connection back to pool
+
+    // 4. Perform operations
+    _ = try repo.findAllBy(User, .{ .active = true });
+}
 ```
 
 ### 4. CRUD Operations

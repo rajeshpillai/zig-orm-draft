@@ -55,6 +55,7 @@ The main entry point for applications.
 *   [x] **CLI Tools**: Automatic registry, migration generator and execution (Core Completed).
 *   [x] **Logging**: SQL execution logging with timing.
 *   [x] **Optimistic Locking**: Automatic version checking and incrementing.
+*   [x] **Connection Pooling**: Generic `Pool(Adapter)` implementation.
 *   [ ] **Model Generation**: CLI command to inspect DB and generate Zig structs.
 
 ---
