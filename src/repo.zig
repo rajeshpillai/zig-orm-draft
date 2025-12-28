@@ -99,11 +99,25 @@ pub fn Repo(comptime Adapter: type) type {
 
                 inline for (Cols, 0..) |col, i| {
                     const val = @field(item.*, col.name);
-                    switch (col.type) {
-                        .Integer => try stmt.bind_int(i, @intCast(val)),
-                        .Text => try stmt.bind_text(i, val),
-                        .Boolean => try stmt.bind_int(i, if (val) 1 else 0),
-                        .Float, .Blob => return error.UnsupportedTypeBinding,
+                    const FieldType = @TypeOf(val);
+
+                    // Handle enums
+                    if (@typeInfo(FieldType) == .Enum) {
+                        if (core_types.shouldStoreEnumAsText(FieldType)) {
+                            const text = core_types.enumToText(FieldType, val);
+                            try stmt.bind_text(i, text);
+                        } else {
+                            const int_val = core_types.enumToInt(FieldType, val);
+                            try stmt.bind_int(i, int_val);
+                        }
+                    } else {
+                        // Handle regular types
+                        switch (col.type) {
+                            .Integer => try stmt.bind_int(i, @intCast(val)),
+                            .Text => try stmt.bind_text(i, val),
+                            .Boolean => try stmt.bind_int(i, if (val) 1 else 0),
+                            .Float, .Blob => return error.UnsupportedTypeBinding,
+                        }
                     }
                 }
 
@@ -351,29 +365,85 @@ pub fn Repo(comptime Adapter: type) type {
                 var item: T = undefined;
 
                 inline for (@TypeOf(q).Table.columns, 0..) |col, i| {
-                    switch (col.type) {
-                        .Integer => {
-                            const val = Adapter.column_int(&stmt, i);
-                            @field(item, col.name) = @intCast(val);
-                        },
-                        .Text => {
-                            const val_opt = Adapter.column_text(&stmt, i);
-                            if (val_opt) |val| {
-                                @field(item, col.name) = try self.allocator.dupe(u8, val);
+                    const FieldType = @TypeOf(@field(item, col.name));
+
+                    // Handle enums
+                    if (@typeInfo(FieldType) == .Enum) {
+                        if (core_types.shouldStoreEnumAsText(FieldType)) {
+                            const text = Adapter.column_text(&stmt, i) orelse return error.NullEnumValue;
+                            @field(item, col.name) = try core_types.textToEnum(FieldType, text);
+                        } else {
+                            const int_val = Adapter.column_int(&stmt, i);
+                            @field(item, col.name) = try core_types.intToEnum(FieldType, @intCast(int_val));
+                        }
+                    } else if (@typeInfo(FieldType) == .Optional) {
+                        const OptChild = @typeInfo(FieldType).Optional.child;
+
+                        // Handle optional enums
+                        if (@typeInfo(OptChild) == .Enum) {
+                            const text_or_null = Adapter.column_text(&stmt, i);
+                            if (text_or_null) |text| {
+                                if (core_types.shouldStoreEnumAsText(OptChild)) {
+                                    @field(item, col.name) = try core_types.textToEnum(OptChild, text);
+                                } else {
+                                    const int_val = Adapter.column_int(&stmt, i);
+                                    @field(item, col.name) = try core_types.intToEnum(OptChild, @intCast(int_val));
+                                }
                             } else {
-                                @field(item, col.name) = ""; // Empty string for null?
+                                @field(item, col.name) = null;
                             }
-                        },
-                        .Boolean => {
-                            const val = Adapter.column_int(&stmt, i);
-                            @field(item, col.name) = (val != 0);
-                        },
-                        // Missing: Float, Blob
-                        else => {
-                            // Ignore others for now or verify in schema matches
-                            // compilation error for unsupported?
-                            return error.UnsupportedTypeMapping;
-                        },
+                        } else {
+                            // Handle regular optional types
+                            switch (col.type) {
+                                .Integer => {
+                                    const text = Adapter.column_text(&stmt, i);
+                                    if (text == null) {
+                                        @field(item, col.name) = null;
+                                    } else {
+                                        @field(item, col.name) = Adapter.column_int(&stmt, i);
+                                    }
+                                },
+                                .Text => {
+                                    const val_opt = Adapter.column_text(&stmt, i);
+                                    if (val_opt) |val| {
+                                        @field(item, col.name) = try self.allocator.dupe(u8, val);
+                                    } else {
+                                        @field(item, col.name) = null;
+                                    }
+                                },
+                                .Boolean => {
+                                    const text = Adapter.column_text(&stmt, i);
+                                    if (text == null) {
+                                        @field(item, col.name) = null;
+                                    } else {
+                                        const val = Adapter.column_int(&stmt, i);
+                                        @field(item, col.name) = (val != 0);
+                                    }
+                                },
+                                .Float, .Blob => return error.UnsupportedTypeMapping,
+                            }
+                        }
+                    } else {
+                        // Handle regular non-optional types
+                        switch (col.type) {
+                            .Integer => {
+                                const val = Adapter.column_int(&stmt, i);
+                                @field(item, col.name) = @intCast(val);
+                            },
+                            .Text => {
+                                const val_opt = Adapter.column_text(&stmt, i);
+                                if (val_opt) |val| {
+                                    @field(item, col.name) = try self.allocator.dupe(u8, val);
+                                } else {
+                                    @field(item, col.name) = "";
+                                }
+                            },
+                            .Boolean => {
+                                const val = Adapter.column_int(&stmt, i);
+                                @field(item, col.name) = (val != 0);
+                            },
+                            .Float, .Blob => return error.UnsupportedTypeMapping,
+                        }
                     }
                 }
                 try results.append(self.allocator, item);
