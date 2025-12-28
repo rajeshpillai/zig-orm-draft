@@ -34,25 +34,32 @@ Adapters provide the low-level bridge to database drivers.
 ### 4. Repository (`src/repo.zig`)
 The main entry point for applications.
 -   **Mapping**: Converts database result rows back into Zig structs using comptime logic.
--   **Lifecycle**: Triggers automatic validations and timestamping before execution.
+-   **Lifecycle**: Triggers automatic validations, timestamping, and **Model Hooks** (`beforeInsert`, `afterUpdate`, etc.) before execution.
+-   **Instance Operations**: Support for `updateModel` and `deleteModel` which take model instances.
 -   **Transactions**: Provides a clean wrapper around `BEGIN`, `COMMIT`, and `ROLLBACK`.
 
 ### 5. Utilities
 -   **Connection Pooling**: Generic, thread-safe pool management using Mutexes.
 -   **Migrations**: Versioned Up/Down migration runner with persistence in a `schema_migrations` table.
+-   **Migration Helpers**: Fluent DSL for schema changes (`createTable`, `addColumn`, `addIndex`).
 -   **Validation**: Declarative rules (`rules` decl inside structs) enforced by the Repo.
+
+---
+
+## Technical Features
+
+### Advanced Querying (Completed)
+-   **Join Support**: Explicitly join tables: `q.innerJoin(Post, "user.id = post.user_id")`.
+-   **Field Selection**: Select specific columns `q.select("name, email")`.
+-   **Complex Expressions**: Support for tuple-based where clauses `.{ .age, .gt, 18 }` and logical grouping (`.OR`, `.AND`).
+-   **Aggregate Functions**: Built-in methods `repo.count(q)` and `repo.scalar(T, q)`.
+-   **Custom Result Mapping**: Map joined results to arbitrary structs via `repo.allAs(T, q)`.
 
 ---
 
 ## Future Feature Roadmap (Suggestions)
 
 The following features would bring the ORM to full production readiness:
-
-### Phase 3: Advanced Querying
--   **Join Support**: Explicitly join tables in the query builder: `q.join(.User, .inner, "id", "user_id")`.
--   **Field Selection**: Ability to select specific columns `select(.{ .name, .email })` instead of `SELECT *`.
--   **Complex Expressions**: Support for `OR` clauses, `NOT`, and complex nesting in `where`.
--   **Aggregate Functions**: Built-in support for `count()`, `sum()`, `avg()`.
 
 ### Phase 4: Developer Experience (DX)
 -   **CLI Tool**: A standalone binary (e.g., `zig-orm CLI`) for:

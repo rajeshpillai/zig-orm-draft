@@ -204,25 +204,10 @@ _ = try q.innerJoin(Users, "posts.user_id = users.id");
 const results = try repo.allAs(PostWithUser, &q);
 ```
 
-### 8. Relationships
+### 8. Migrations
+Schema versioning with up/down support and a fluent DSL for table management.
 
 ```zig
-// One-to-One
-const profile = try repo.findBy(Profiles, .{ .user_id = user.id });
-
-// One-to-Many
-const posts = try repo.findAllBy(Posts, .{ .user_id = user.id });
-
-// Eager Loading (Preload)
-const user_ids = [_]i64{ 1, 2, 3 };
-var q = try orm.from(Posts, allocator);
-defer q.deinit();
-_ = try q.whereIn("user_id", &user_ids);
-const all_posts = try repo.all(q);
-```
-
-### 7. Migrations
-
 // Migrations with DSL
 pub fn up_001(db_ptr: *anyopaque) !void {
     const db: *orm.sqlite.SQLite = @ptrCast(@alignCast(db_ptr));
@@ -239,12 +224,36 @@ pub fn up_001(db_ptr: *anyopaque) !void {
     try helper.addIndex("idx_users_name", &[_][]const u8{"name"}, true);
 }
 
+pub fn down_001(db_ptr: *anyopaque) !void {
+    const db: *orm.sqlite.SQLite = @ptrCast(@alignCast(db_ptr));
+    var helper = orm.migrations.helpers.MigrationHelper(orm.sqlite.SQLite).init(db, allocator);
+    try helper.dropTable("users");
+}
+
 const migrations_list = [_]orm.migrations.Migration{
     .{ .version = 1, .name = "create_users", .up = &up_001, .down = &down_001 },
 };
 
 var runner = orm.migrations.MigrationRunner(orm.sqlite.SQLite).init(&db, allocator);
 try runner.migrate(&migrations_list);
+```
+
+### 9. Relationships
+The ORM facilitates building associations using explicit queries.
+
+```zig
+// One-to-One
+const profile = try repo.findBy(Profiles, .{ .user_id = user.id });
+
+// One-to-Many
+const posts = try repo.findAllBy(Posts, .{ .user_id = user.id });
+
+// Eager Loading (Preload)
+const user_ids = [_]i64{ 1, 2, 3 };
+var q = try orm.from(Posts, allocator);
+defer q.deinit();
+_ = try q.whereIn("user_id", &user_ids);
+const all_posts = try repo.all(q);
 ```
 
 ## Design Principles
