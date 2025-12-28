@@ -11,7 +11,7 @@ pub fn validateConstraints(
     if (!@hasDecl(T, "constraints")) return;
 
     const constraints = T.constraints;
-    for (constraints) |constraint| {
+    inline for (constraints) |constraint| {
         switch (constraint) {
             .unique => |unique| try validateUnique(T, repo, model, unique),
             .check => |check| try validateCheck(T, model, check),
@@ -25,7 +25,7 @@ fn validateUnique(
     comptime T: type,
     repo: anytype,
     model: *const T,
-    unique: schema.Constraint.UniqueConstraint,
+    comptime unique: schema.Constraint.UniqueConstraint,
 ) !void {
     _ = repo; // TODO: Use repo to query database in actual implementation
 
