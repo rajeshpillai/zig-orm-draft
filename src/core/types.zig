@@ -29,7 +29,7 @@ pub const EnumError = error{
 pub fn shouldStoreEnumAsText(comptime E: type) bool {
     const type_info = @typeInfo(E);
     switch (type_info) {
-        .Enum => {
+        .@"enum" => {
             // Simple approach: always use TEXT for now
             // This avoids complex type info operations
             // In practice, most enums without explicit backing are TEXT

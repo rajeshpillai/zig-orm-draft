@@ -1,0 +1,23 @@
+.{
+    .name = .jetquery,
+    .version = "0.0.0",
+    .fingerprint = 0x8fab0d79cef7d74c,
+    .minimum_zig_version = "0.15.1",
+    .dependencies = .{
+        .jetcommon = .{
+            .url = "https://github.com/jetzig-framework/jetcommon/archive/da50c67de931bcfe68dc54633b406315152e0c60.tar.gz",
+            .hash = "jetcommon-0.1.0-jPY_DdhIAAAk0zqZQf6adpaL5s2g115R8TDZ9j-VboCO",
+        },
+        .pg = .{
+            .url = "https://github.com/karlseguin/pg.zig/archive/f8d4892387fbad2abdf775783e101e50a7114335.tar.gz",
+            .hash = "pg-0.0.0-Wp_7gag6BgD_QAZrPhNNEGpnUZR_LEkKT40Ura3p-4yX",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "LICENSE",
+        "README.md",
+    },
+}
