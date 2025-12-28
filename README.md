@@ -131,7 +131,29 @@ _ = try u.where(.{ .name = "Alice" });
 try repo.update(u);
 ```
 
-### 5. Relationships
+### 5. Model Hooks (Lifecycles)
+
+Define methods on your model structs that run automatically before or after database operations.
+
+```zig
+pub const User = struct {
+    id: i64,
+    name: []const u8,
+
+    // Runs before repository insertion
+    pub fn beforeInsert(self: *User) !void {
+        if (std.mem.eql(u8, self.name, "forbidden")) return error.InvalidName;
+        // Logic to modify self before insert
+    }
+
+    // Runs after repository insertion
+    pub fn afterInsert(self: *User) !void {
+        std.debug.print("User {s} persisted successfully\n", .{self.name});
+    }
+};
+```
+
+### 6. Relationships
 
 ```zig
 // One-to-One
@@ -148,7 +170,7 @@ _ = try q.whereIn("user_id", &user_ids);
 const all_posts = try repo.all(q);
 ```
 
-### 6. Migrations
+### 7. Migrations
 
 // Migrations with DSL
 pub fn up_001(db_ptr: *anyopaque) !void {
