@@ -23,7 +23,10 @@ This document provides an honest assessment of the Zig ORM's production readines
 - ✅ CLI tools for migrations and model generation
 - ✅ Comprehensive documentation (6 guides)
 - ✅ SQL logging with timing
+- ✅ SQL logging with timing
 - ✅ Detailed error messages
+- ✅ **Enum Support** (Type introspection fixed)
+- ✅ **Schema Constraints** (Unique, Check, etc.)
 
 ### ⚠️ Considerations Before Production
 
@@ -33,7 +36,6 @@ This document provides an honest assessment of the Zig ORM's production readines
 - **Recommendation**: Pin to a specific Zig version in your build
 
 **2. Missing Features (Nice-to-Have)**
-- ❌ Enum mapping (Zig enum ↔ DB types) - **✅ NOW IMPLEMENTED**
 - ❌ Advanced transactions (savepoints, isolation levels)
 - ❌ Query caching
 - ❌ Database connection health checks
@@ -85,6 +87,7 @@ This ORM is inspired by Elixir's Ecto. Here's an honest assessment of gaps to re
 - **Soft delete** - Non-destructive deletion
 - **Optimistic locking** - Concurrent update protection
 - **Enum mapping** - Type-safe enum serialization
+- **Schema Constraints** - DB constraint definitions in schema
 
 ### 🔴 Critical Gaps (Ecto Has, We Don't)
 
@@ -194,7 +197,12 @@ Ecto.Multi.new()
 - Map DB errors to typed errors
 - Add error context/metadata
 
-#### 5. **Schema-Level Constraint Awareness** (MEDIUM IMPACT, MEDIUM COMPLEXITY)
+#### 5. **Schema-Level Constraint Awareness** (Completed in Phase 11)
+**✅ What We Have:**
+- Constraint declarations (`unique`, `check`, `foreign_key`)
+- Typed `ValidationError` mapping
+- Pre-flight validation logic
+
 **What Ecto Has:**
 ```elixir
 schema "users" do
@@ -636,4 +644,5 @@ fn withRetry(operation: anytype, max_attempts: usize) !void {
 ---
 
 **Last Updated**: December 28, 2024
-**Version**: Phase 9 (Soft Delete Complete)
+**Last Updated**: December 28, 2024
+**Version**: Phase 11 (Schema Constraints Complete)

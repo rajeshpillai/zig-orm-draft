@@ -45,6 +45,7 @@ The main entry point for applications.
 -   **Migrations**: Versioned Up/Down migration runner with persistence in a `schema_migrations` table.
 -   **Migration Helpers**: Fluent DSL for schema changes (`createTable`, `addColumn`, `addIndex`).
 -   **Validation**: Declarative rules (`rules` decl inside structs) enforced by the Repo.
+-   **Error Mapping**: Database constraint violations (Unique, Check, FK) mapped to typed Zig errors.
 
 ---
 
@@ -61,6 +62,8 @@ The main entry point for applications.
 *   [x] **Read Replicas**: Automatic routing with `acquireForRead()`/`acquireForWrite()`.
 *   [x] **Soft Delete**: Automatic `deleted_at` detection with restore and force delete.
 *   [x] **Model Generation**: CLI command to inspect DB and generate Zig structs.
+*   [x] **Schema Constraints**: Unique, Check, and Foreign Key constraint declarations.
+*   [x] **Enum Mapping**: Native Zig `enum` support with text/integer storage strategies.
 
 ---
 
@@ -76,7 +79,6 @@ The following features would bring the ORM to full production readiness:
 -   **Generic Logger**: A way to plug in custom logging to see generated SQL and execution times.
 
 ### Phase 5: Production Hardening
--   **Enum Mapping**: Native mapping between Zig `enum` and DB `TEXT` or `INTEGER` types.
 -   **Advanced Transactions**: Savepoints, nested transactions, and transaction isolation levels.
 -   **Query Caching**: Cache frequently-used queries for performance.
 
