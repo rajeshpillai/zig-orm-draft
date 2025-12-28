@@ -157,7 +157,48 @@ _ = try u.where(.{ .name = "Alice" });
 try repo.update(u);
 ```
 
-### 5. Model Hooks (Lifecycles)
+### 5. Enum Mapping
+
+Automatic bidirectional mapping between Zig enums and database types:
+
+```zig
+// String enums → TEXT storage
+const Status = enum {
+    pending,
+    active,
+    completed,
+};
+
+// Integer enums → INTEGER storage
+const Priority = enum(u8) {
+    low = 0,
+    medium = 1,
+    high = 2,
+};
+
+const Task = struct {
+    id: ?i64 = null,
+    title: []const u8,
+    status: Status,        // Stored as TEXT: "pending", "active", "completed"
+    priority: Priority,    // Stored as INTEGER: 0, 1, 2
+    optional_status: ?Status = null, // NULL or TEXT
+};
+
+// Insert - automatic serialization
+var task = Task{
+    .title = "Implement enums",
+    .status = .active,
+    .priority = .high,
+};
+try repo.insert(&task);
+
+// Query - automatic deserialization
+const tasks = try repo.findAllBy(TaskTable, .{ .status = .active });
+// tasks[0].status == Status.active
+// tasks[0].priority == Priority.high
+```
+
+### 6. Model Hooks (Lifecycles)
 
 Define methods on your model structs that run automatically before or after database operations.
 
