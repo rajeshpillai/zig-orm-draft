@@ -367,9 +367,10 @@ pub fn Repo(comptime Adapter: type) type {
 
                 inline for (@TypeOf(q).Table.columns, 0..) |col, i| {
                     const FieldType = @TypeOf(@field(item, col.name));
+                    const field_type_info = @typeInfo(FieldType);
 
                     // Handle enums
-                    if (@typeInfo(FieldType) == .Enum) {
+                    if (field_type_info == .Enum) {
                         if (core_types.shouldStoreEnumAsText(FieldType)) {
                             const text = Adapter.column_text(&stmt, i) orelse return error.NullEnumValue;
                             @field(item, col.name) = try core_types.textToEnum(FieldType, text);
@@ -377,11 +378,12 @@ pub fn Repo(comptime Adapter: type) type {
                             const int_val = Adapter.column_int(&stmt, i);
                             @field(item, col.name) = try core_types.intToEnum(FieldType, @intCast(int_val));
                         }
-                    } else if (@typeInfo(FieldType) == .Optional) {
+                    } else if (field_type_info == .Optional) {
                         const OptChild = @typeInfo(FieldType).Optional.child;
+                        const opt_child_info = @typeInfo(OptChild);
 
                         // Handle optional enums
-                        if (@typeInfo(OptChild) == .Enum) {
+                        if (opt_child_info == .Enum) {
                             const text_or_null = Adapter.column_text(&stmt, i);
                             if (text_or_null) |text| {
                                 if (core_types.shouldStoreEnumAsText(OptChild)) {

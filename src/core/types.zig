@@ -30,7 +30,8 @@ pub fn shouldStoreEnumAsText(comptime E: type) bool {
     switch (type_info) {
         .Enum => |enum_info| {
             // If enum has explicit integer backing type, use INTEGER storage
-            if (enum_info.tag_type != comptime_int and @typeInfo(enum_info.tag_type) == .Int) {
+            const tag_type_info = @typeInfo(enum_info.tag_type);
+            if (tag_type_info == .Int) {
                 return false;
             }
             return true; // Default to TEXT
