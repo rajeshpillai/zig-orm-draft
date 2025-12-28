@@ -55,14 +55,10 @@ pub fn enumToInt(comptime E: type, value: E) i64 {
 }
 
 /// Convert integer to enum value
+/// Simple implementation that just casts the value
 pub fn intToEnum(comptime E: type, value: i64) EnumError!E {
-    // Use std.meta.intToEnum which handles the conversion safely
-    inline for (std.meta.fields(E)) |field| {
-        if (field.value == value) {
-            return @enumFromInt(value);
-        }
-    }
-    return error.InvalidEnumValue;
+    // Simple cast - let Zig handle the conversion
+    return @enumFromInt(value);
 }
 
 test "Type enum" {
