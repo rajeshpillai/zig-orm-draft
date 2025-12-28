@@ -49,6 +49,11 @@ pub fn Repo(comptime Adapter: type) type {
             self.adapter.deinit();
         }
 
+        /// Check if a model type has soft delete support (deleted_at field)
+        fn hasSoftDelete(comptime T: type) bool {
+            return @hasField(T, "deleted_at");
+        }
+
         pub fn begin(self: *Self) !void {
             try self.adapter.exec("BEGIN");
         }
