@@ -61,12 +61,13 @@ pub fn enumToInt(comptime E: type, value: E) i64 {
 
 /// Convert integer to enum value
 pub fn intToEnum(comptime E: type, value: i64) EnumError!E {
-    const enum_info = @typeInfo(E).Enum;
-    const IntType = enum_info.tag_type;
-
-    // Check if value is in valid range
-    const int_value: IntType = @intCast(value);
-    return std.meta.intToEnum(E, int_value) catch error.InvalidEnumValue;
+    // Use std.meta.intToEnum which handles the conversion safely
+    inline for (std.meta.fields(E)) |field| {
+        if (field.value == value) {
+            return @enumFromInt(value);
+        }
+    }
+    return error.InvalidEnumValue;
 }
 
 test "Type enum" {
