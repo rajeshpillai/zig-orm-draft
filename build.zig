@@ -16,6 +16,45 @@ pub fn build(b: *std.Build) void {
     });
     mod.addIncludePath(b.path("src/c"));
 
+    // CLI executable
+    const exe = b.addExecutable(.{
+        .name = "zig-orm",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/cli/main.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    exe.root_module.addImport("zig-orm", mod);
+
+    // Build options for CLI
+    const options = b.addOptions();
+    var has_migrations = false;
+
+    // Conditionally add migrations if they exist
+    if (b.build_root.handle.access("migrations/migrations.zig", .{})) |_| {
+        has_migrations = true;
+        const migrations_mod = b.createModule(.{
+            .root_source_file = b.path("migrations/migrations.zig"),
+        });
+        migrations_mod.addImport("zig-orm", mod);
+        exe.root_module.addImport("migrations", migrations_mod);
+    } else |_| {}
+
+    options.addOption(bool, "has_migrations", has_migrations);
+    exe.root_module.addOptions("build_options", options);
+
+    exe.linkLibC();
+    b.installArtifact(exe);
+
+    const run_cmd = b.addRunArtifact(exe);
+    run_cmd.step.dependOn(b.getInstallStep());
+    if (b.args) |args| {
+        run_cmd.addArgs(args);
+    }
+    const run_step = b.step("run", "Run the CLI");
+    run_step.dependOn(&run_cmd.step);
+
     // PostgreSQL support (libpq)
     // Note: Requires PostgreSQL to be installed
     // Windows: D:\Program Files\PostgreSQL\18\

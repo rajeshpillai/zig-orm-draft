@@ -2,7 +2,8 @@ const std = @import("std");
 const orm = @import("zig-orm");
 
 // Example migration 001: Create users table
-pub fn up_001(db_ptr: *anyopaque) !void {
+pub fn up_001(db_ptr: *anyopaque, allocator: std.mem.Allocator) !void {
+    _ = allocator;
     const db: *orm.sqlite.SQLite = @ptrCast(@alignCast(db_ptr));
     try db.exec(
         \\CREATE TABLE users (
@@ -14,13 +15,15 @@ pub fn up_001(db_ptr: *anyopaque) !void {
     );
 }
 
-pub fn down_001(db_ptr: *anyopaque) !void {
+pub fn down_001(db_ptr: *anyopaque, allocator: std.mem.Allocator) !void {
+    _ = allocator;
     const db: *orm.sqlite.SQLite = @ptrCast(@alignCast(db_ptr));
     try db.exec("DROP TABLE users");
 }
 
 // Example migration 002: Create posts table
-pub fn up_002(db_ptr: *anyopaque) !void {
+pub fn up_002(db_ptr: *anyopaque, allocator: std.mem.Allocator) !void {
+    _ = allocator;
     const db: *orm.sqlite.SQLite = @ptrCast(@alignCast(db_ptr));
     try db.exec(
         \\CREATE TABLE posts (
@@ -31,7 +34,8 @@ pub fn up_002(db_ptr: *anyopaque) !void {
     );
 }
 
-pub fn down_002(db_ptr: *anyopaque) !void {
+pub fn down_002(db_ptr: *anyopaque, allocator: std.mem.Allocator) !void {
+    _ = allocator;
     const db: *orm.sqlite.SQLite = @ptrCast(@alignCast(db_ptr));
     try db.exec("DROP TABLE posts");
 }

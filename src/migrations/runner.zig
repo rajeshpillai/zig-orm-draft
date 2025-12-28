@@ -3,7 +3,7 @@ const timestamps = @import("../core/timestamps.zig");
 pub const helpers = @import("helpers.zig");
 const Allocator = std.mem.Allocator;
 
-pub const MigrationFn = *const fn (db: *anyopaque) anyerror!void;
+pub const MigrationFn = *const fn (db: *anyopaque, allocator: Allocator) anyerror!void;
 
 pub const Migration = struct {
     version: i64,
@@ -93,7 +93,7 @@ pub fn MigrationRunner(comptime Adapter: type) type {
                 }
 
                 std.debug.print("Applying migration {d}: {s}\n", .{ migration.version, migration.name });
-                try migration.up(@ptrCast(self.adapter));
+                try migration.up(@ptrCast(self.adapter), self.allocator);
                 try self.recordMigration(migration);
                 std.debug.print("OK: Migration {d} applied\n", .{migration.version});
             }
@@ -115,7 +115,7 @@ pub fn MigrationRunner(comptime Adapter: type) type {
                 if (!(try self.isApplied(migration.version))) continue;
 
                 std.debug.print("Rolling back migration {d}: {s}\n", .{ migration.version, migration.name });
-                try migration.down(@ptrCast(self.adapter));
+                try migration.down(@ptrCast(self.adapter), self.allocator);
                 try self.removeMigration(migration.version);
                 std.debug.print("OK: Migration {d} rolled back\n", .{migration.version});
 
