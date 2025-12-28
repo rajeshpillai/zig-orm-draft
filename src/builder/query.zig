@@ -46,6 +46,26 @@ pub const Logical = enum {
     }
 };
 
+pub const JoinType = enum {
+    INNER,
+    LEFT,
+    RIGHT,
+
+    pub fn toSql(self: JoinType) []const u8 {
+        return switch (self) {
+            .INNER => "INNER JOIN",
+            .LEFT => "LEFT JOIN",
+            .RIGHT => "RIGHT JOIN",
+        };
+    }
+};
+
+pub const Join = struct {
+    join_type: JoinType,
+    table_name: []const u8,
+    on_expr: []const u8,
+};
+
 pub fn Query(comptime TableT: type) type {
     return struct {
         pub const Table = TableT;
@@ -56,6 +76,7 @@ pub fn Query(comptime TableT: type) type {
         where_exprs: std.ArrayList(u8),
         select_exprs: std.ArrayList(u8),
         group_by_exprs: std.ArrayList(u8),
+        joins: std.ArrayList(Join),
         limit_val: ?u64 = null,
         offset_val: ?u64 = null,
 
@@ -66,6 +87,7 @@ pub fn Query(comptime TableT: type) type {
                 .where_exprs = try std.ArrayList(u8).initCapacity(allocator, 0),
                 .select_exprs = try std.ArrayList(u8).initCapacity(allocator, 0),
                 .group_by_exprs = try std.ArrayList(u8).initCapacity(allocator, 0),
+                .joins = try std.ArrayList(Join).initCapacity(allocator, 0),
             };
         }
 
@@ -74,6 +96,7 @@ pub fn Query(comptime TableT: type) type {
             self.where_exprs.deinit(self.allocator);
             self.select_exprs.deinit(self.allocator);
             self.group_by_exprs.deinit(self.allocator);
+            self.joins.deinit(self.allocator);
         }
 
         // Allow chaining
@@ -260,6 +283,24 @@ pub fn Query(comptime TableT: type) type {
             return self;
         }
 
+        pub fn innerJoin(self: *Self, comptime OtherTable: type, on_expr: []const u8) !*Self {
+            try self.joins.append(self.allocator, .{
+                .join_type = .INNER,
+                .table_name = OtherTable.table_name,
+                .on_expr = on_expr,
+            });
+            return self;
+        }
+
+        pub fn leftJoin(self: *Self, comptime OtherTable: type, on_expr: []const u8) !*Self {
+            try self.joins.append(self.allocator, .{
+                .join_type = .LEFT,
+                .table_name = OtherTable.table_name,
+                .on_expr = on_expr,
+            });
+            return self;
+        }
+
         pub fn toSql(self: Self, allocator: std.mem.Allocator) ![:0]u8 {
             var list = try std.ArrayList(u8).initCapacity(allocator, 0);
             errdefer list.deinit(allocator);
@@ -277,6 +318,15 @@ pub fn Query(comptime TableT: type) type {
 
             try list.appendSlice(allocator, " FROM ");
             try list.appendSlice(allocator, TableT.table_name);
+
+            for (self.joins.items) |j| {
+                try list.appendSlice(allocator, " ");
+                try list.appendSlice(allocator, j.join_type.toSql());
+                try list.appendSlice(allocator, " ");
+                try list.appendSlice(allocator, j.table_name);
+                try list.appendSlice(allocator, " ON ");
+                try list.appendSlice(allocator, j.on_expr);
+            }
 
             if (self.where_exprs.items.len > 0) {
                 try list.appendSlice(allocator, " WHERE ");

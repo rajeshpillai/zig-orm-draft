@@ -187,7 +187,24 @@ _ = try q.count("*");
 _ = try q.groupBy("active");
 ```
 
-### 7. Relationships
+### 7. Table Joins
+You can perform `INNER JOIN` and `LEFT JOIN` and map results to custom structs.
+
+```zig
+const PostWithUser = struct {
+    post_title: []const u8,
+    user_name: []const u8,
+};
+
+var q = try orm.from(Posts, allocator);
+_ = try q.select("posts.title as post_title");
+_ = try q.select("users.name as user_name");
+_ = try q.innerJoin(Users, "posts.user_id = users.id");
+
+const results = try repo.allAs(PostWithUser, &q);
+```
+
+### 8. Relationships
 
 ```zig
 // One-to-One

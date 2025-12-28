@@ -255,6 +255,67 @@ pub fn Repo(comptime Adapter: type) type {
             return error.NoResults;
         }
 
+        /// Execute query and map results to custom struct
+        pub fn allAs(self: *Self, comptime ResultT: type, q: anytype) ![]ResultT {
+            const sql = try q.toSql(self.allocator);
+            defer self.allocator.free(sql);
+
+            var stmt = try self.adapter.prepare(sql);
+            defer stmt.deinit();
+
+            // Bind params
+            for (q.params.items, 0..) |param, i| {
+                switch (param) {
+                    .Integer => |val| try stmt.bind_int(i, val),
+                    .Text => |val| try stmt.bind_text(i, val),
+                    .Boolean => |val| try stmt.bind_int(i, if (val) 1 else 0),
+                    .Float, .Blob => return error.UnsupportedTypeBinding,
+                }
+            }
+
+            var bind_idx = q.params.items.len;
+            if (q.limit_val) |lim| {
+                try stmt.bind_int(bind_idx, @intCast(lim));
+                bind_idx += 1;
+            }
+            if (q.offset_val) |off| {
+                try stmt.bind_int(bind_idx, @intCast(off));
+                bind_idx += 1;
+            }
+
+            var results = try std.ArrayList(ResultT).initCapacity(self.allocator, 0);
+            errdefer results.deinit(self.allocator);
+
+            while (try stmt.step()) {
+                var item: ResultT = undefined;
+                const info = @typeInfo(ResultT);
+
+                if (info != .@"struct") @compileError("ResultT must be a struct");
+
+                inline for (info.@"struct".fields, 0..) |field, i| {
+                    const field_type = field.type;
+                    if (field_type == i64 or field_type == i32) {
+                        const val = Adapter.column_int(&stmt, i);
+                        @field(item, field.name) = @intCast(val);
+                    } else if (field_type == []const u8 or field_type == [:0]const u8) {
+                        const val_opt = Adapter.column_text(&stmt, i);
+                        if (val_opt) |val| {
+                            @field(item, field.name) = try self.allocator.dupe(u8, val);
+                        } else {
+                            @field(item, field.name) = "";
+                        }
+                    } else if (field_type == bool) {
+                        const val = Adapter.column_int(&stmt, i);
+                        @field(item, field.name) = (val != 0);
+                    } else {
+                        return error.UnsupportedTypeMapping;
+                    }
+                }
+                try results.append(self.allocator, item);
+            }
+            return results.toOwnedSlice(self.allocator);
+        }
+
         /// Execute a raw SQL query and map results to ResultT
         pub fn query(self: *Self, comptime ResultT: type, sql: [:0]const u8, params: []const core_types.Value) ![]ResultT {
             var stmt = try self.adapter.prepare(sql);
