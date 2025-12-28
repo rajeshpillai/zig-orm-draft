@@ -43,7 +43,7 @@ pub fn up(db_ptr: *anyopaque, allocator: std.mem.Allocator) !void {
     });
     
     // Add unique index on email
-    try helper.addIndex("idx_users_email", &.{ "email" }, true);
+    try helper.addIndex("users", "idx_users_email", &.{ "email" }, true);
 }
 
 pub fn down(db_ptr: *anyopaque, allocator: std.mem.Allocator) !void {
@@ -76,7 +76,7 @@ pub fn up(db_ptr: *anyopaque, allocator: std.mem.Allocator) !void {
         .{ .name = "updated_at", .type = .integer },
     });
     
-    try helper.addIndex("idx_posts_user_id", &.{ "user_id" }, false);
+    try helper.addIndex("posts", "idx_posts_user_id", &.{ "user_id" }, false);
 }
 
 pub fn down(db_ptr: *anyopaque, allocator: std.mem.Allocator) !void {
@@ -108,7 +108,7 @@ pub fn up(db_ptr: *anyopaque, allocator: std.mem.Allocator) !void {
         .{ .name = "created_at", .type = .integer },
     });
     
-    try helper.addIndex("idx_comments_post_id", &.{ "post_id" }, false);
+    try helper.addIndex("comments", "idx_comments_post_id", &.{ "post_id" }, false);
 }
 
 pub fn down(db_ptr: *anyopaque, allocator: std.mem.Allocator) !void {
@@ -137,7 +137,7 @@ pub fn up(db_ptr: *anyopaque, allocator: std.mem.Allocator) !void {
         .{ .name = "id", .type = .integer, .primary_key = true },
         .{ .name = "name", .type = .text, .nullable = false },
     });
-    try helper.addIndex("idx_tags_name", &.{ "name" }, true);
+    try helper.addIndex("tags", "idx_tags_name", &.{ "name" }, true);
 
     // Join Table: posts_tags
     try helper.createTable("posts_tags", &.{
@@ -146,7 +146,7 @@ pub fn up(db_ptr: *anyopaque, allocator: std.mem.Allocator) !void {
     });
     
     // Composite Primary Key (via unique index for now, or raw SQL if preferred)
-    try helper.addIndex("idx_posts_tags_unique", &.{ "post_id", "tag_id" }, true);
+    try helper.addIndex("posts_tags", "idx_posts_tags_unique", &.{ "post_id", "tag_id" }, true);
 }
 
 pub fn down(db_ptr: *anyopaque, allocator: std.mem.Allocator) !void {

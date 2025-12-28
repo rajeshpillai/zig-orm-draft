@@ -8,7 +8,11 @@ zig-out/**/*
 
 reference/
 
+
+# Database files and test migrations (library development only)
 *.db
+development.db
+migrations/
 test*.txt
 
 node_modules
