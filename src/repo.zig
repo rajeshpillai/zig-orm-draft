@@ -123,7 +123,6 @@ pub fn Repo(comptime Adapter: type) type {
                             .Boolean => try stmt.bind_int(i, if (val) 1 else 0),
                             .Float, .Blob => return error.UnsupportedTypeBinding,
                         }
-                    }
                 }
 
                 _ = try stmt.step();
