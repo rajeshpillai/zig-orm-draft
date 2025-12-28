@@ -211,4 +211,18 @@ pub fn build(b: *std.Build) void {
 
     const run_hooks_tests = b.addRunArtifact(hooks_tests);
     test_step.dependOn(&run_hooks_tests.step);
+
+    // Aggregates tests
+    const aggregates_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/aggregates_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    aggregates_tests.root_module.addImport("zig-orm", mod);
+    aggregates_tests.linkLibC();
+
+    const run_aggregates_tests = b.addRunArtifact(aggregates_tests);
+    test_step.dependOn(&run_aggregates_tests.step);
 }

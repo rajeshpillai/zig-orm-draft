@@ -54,6 +54,8 @@ pub fn Query(comptime TableT: type) type {
         allocator: std.mem.Allocator,
         params: std.ArrayList(core_types.Value),
         where_exprs: std.ArrayList(u8),
+        select_exprs: std.ArrayList(u8),
+        group_by_exprs: std.ArrayList(u8),
         limit_val: ?u64 = null,
         offset_val: ?u64 = null,
 
@@ -62,12 +64,16 @@ pub fn Query(comptime TableT: type) type {
                 .allocator = allocator,
                 .params = try std.ArrayList(core_types.Value).initCapacity(allocator, 0),
                 .where_exprs = try std.ArrayList(u8).initCapacity(allocator, 0),
+                .select_exprs = try std.ArrayList(u8).initCapacity(allocator, 0),
+                .group_by_exprs = try std.ArrayList(u8).initCapacity(allocator, 0),
             };
         }
 
         pub fn deinit(self: *Self) void {
             self.params.deinit(self.allocator);
             self.where_exprs.deinit(self.allocator);
+            self.select_exprs.deinit(self.allocator);
+            self.group_by_exprs.deinit(self.allocator);
         }
 
         // Allow chaining
@@ -232,15 +238,41 @@ pub fn Query(comptime TableT: type) type {
             return self;
         }
 
+        pub fn select(self: *Self, expr: []const u8) !*Self {
+            if (self.select_exprs.items.len > 0) {
+                try self.select_exprs.appendSlice(self.allocator, ", ");
+            }
+            try self.select_exprs.appendSlice(self.allocator, expr);
+            return self;
+        }
+
+        pub fn count(self: *Self, field: []const u8) !*Self {
+            var buf: [256]u8 = undefined;
+            const expr = try std.fmt.bufPrint(&buf, "COUNT({s})", .{field});
+            return try self.select(expr);
+        }
+
+        pub fn groupBy(self: *Self, field: []const u8) !*Self {
+            if (self.group_by_exprs.items.len > 0) {
+                try self.group_by_exprs.appendSlice(self.allocator, ", ");
+            }
+            try self.group_by_exprs.appendSlice(self.allocator, field);
+            return self;
+        }
+
         pub fn toSql(self: Self, allocator: std.mem.Allocator) ![:0]u8 {
             var list = try std.ArrayList(u8).initCapacity(allocator, 0);
             errdefer list.deinit(allocator);
 
             try list.appendSlice(allocator, "SELECT ");
 
-            inline for (TableT.columns, 0..) |col, i| {
-                if (i > 0) try list.appendSlice(allocator, ", ");
-                try list.appendSlice(allocator, col.name);
+            if (self.select_exprs.items.len > 0) {
+                try list.appendSlice(allocator, self.select_exprs.items);
+            } else {
+                inline for (TableT.columns, 0..) |col, i| {
+                    if (i > 0) try list.appendSlice(allocator, ", ");
+                    try list.appendSlice(allocator, col.name);
+                }
             }
 
             try list.appendSlice(allocator, " FROM ");
@@ -249,6 +281,11 @@ pub fn Query(comptime TableT: type) type {
             if (self.where_exprs.items.len > 0) {
                 try list.appendSlice(allocator, " WHERE ");
                 try list.appendSlice(allocator, self.where_exprs.items);
+            }
+
+            if (self.group_by_exprs.items.len > 0) {
+                try list.appendSlice(allocator, " GROUP BY ");
+                try list.appendSlice(allocator, self.group_by_exprs.items);
             }
 
             if (self.limit_val) |_| {

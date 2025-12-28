@@ -167,7 +167,27 @@ try repo.updateModel(Users, &user);
 try repo.deleteModel(Users, &user);
 ```
 
-### 6. Relationships
+### 6. Aggregates and Field Selection
+You can select specific columns, use aggregate functions, and group results.
+
+```zig
+var q = try orm.from(Users, allocator);
+_ = try q.where(.{ .active = true });
+
+// Basic count
+const total = try repo.count(&q);
+
+// Custom selection and sum
+_ = try q.select("SUM(age)");
+const sum = try repo.scalar(i64, &q);
+
+// Group by
+_ = try q.select("active");
+_ = try q.count("*");
+_ = try q.groupBy("active");
+```
+
+### 7. Relationships
 
 ```zig
 // One-to-One

@@ -214,6 +214,47 @@ pub fn Repo(comptime Adapter: type) type {
             return results.toOwnedSlice(self.allocator);
         }
 
+        pub fn count(self: *Self, q: anytype) !u64 {
+            const QT = @TypeOf(q);
+            if (comptime @typeInfo(QT) == .pointer) {
+                _ = try q.select("COUNT(*)");
+                return try self.scalar(u64, q);
+            } else {
+                var mutable_q = q;
+                _ = try mutable_q.select("COUNT(*)");
+                return try self.scalar(u64, &mutable_q);
+            }
+        }
+
+        pub fn scalar(self: *Self, comptime T: type, q: anytype) !T {
+            const sql = try q.toSql(self.allocator);
+            defer self.allocator.free(sql);
+
+            var stmt = try self.adapter.prepare(sql);
+            defer stmt.deinit();
+
+            // Bind WHERE clause parameters
+            for (q.params.items, 0..) |param, i| {
+                switch (param) {
+                    .Integer => |val| try stmt.bind_int(i, val),
+                    .Text => |val| try stmt.bind_text(i, val),
+                    .Boolean => |val| try stmt.bind_int(i, if (val) 1 else 0),
+                    .Float, .Blob => return error.UnsupportedTypeBinding,
+                }
+            }
+
+            if (try stmt.step()) {
+                if (T == i64 or T == u64 or T == i32 or T == usize) {
+                    return @intCast(Adapter.column_int(&stmt, 0));
+                } else if (T == []const u8) {
+                    const val_opt = Adapter.column_text(&stmt, 0);
+                    return try self.allocator.dupe(u8, val_opt orelse "");
+                }
+                return error.UnsupportedScalarType;
+            }
+            return error.NoResults;
+        }
+
         /// Execute a raw SQL query and map results to ResultT
         pub fn query(self: *Self, comptime ResultT: type, sql: [:0]const u8, params: []const core_types.Value) ![]ResultT {
             var stmt = try self.adapter.prepare(sql);
