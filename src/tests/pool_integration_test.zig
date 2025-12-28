@@ -26,7 +26,7 @@ test "pool - sqlite integration" {
     // Select
     var stmt = try conn.prepare("SELECT name FROM test_pool WHERE id = ?");
     defer stmt.deinit();
-    try stmt.bind_int(1, 1);
+    try stmt.bind_int(0, 1);
     const has_row = try stmt.step();
     try testing.expect(has_row);
 
