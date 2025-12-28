@@ -155,4 +155,18 @@ pub fn build(b: *std.Build) void {
 
     const run_timestamp_tests = b.addRunArtifact(timestamp_tests);
     test_step.dependOn(&run_timestamp_tests.step);
+
+    // Raw SQL tests
+    const raw_sql_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/raw_sql_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    raw_sql_tests.root_module.addImport("zig-orm", mod);
+    raw_sql_tests.linkLibC();
+
+    const run_raw_sql_tests = b.addRunArtifact(raw_sql_tests);
+    test_step.dependOn(&run_raw_sql_tests.step);
 }

@@ -1,7 +1,8 @@
 const std = @import("std");
-const query = @import("builder/query.zig");
+const builder = @import("builder/query.zig");
 const timestamps = @import("core/timestamps.zig");
 const validation = @import("validation/validator.zig");
+const core_types = @import("core/types.zig");
 
 pub fn Repo(comptime Adapter: type) type {
     return struct {
@@ -114,7 +115,7 @@ pub fn Repo(comptime Adapter: type) type {
 
         /// Find a single record by condition, returns null if not found
         pub fn findBy(self: *Self, comptime TableT: type, condition: anytype) !?TableT.model_type {
-            var q = try query.from(TableT, self.allocator);
+            var q = try builder.from(TableT, self.allocator);
             defer q.deinit();
             _ = try q.where(condition);
             _ = q.limit(1);
@@ -130,7 +131,7 @@ pub fn Repo(comptime Adapter: type) type {
 
         /// Find all records matching condition
         pub fn findAllBy(self: *Self, comptime TableT: type, condition: anytype) ![]TableT.model_type {
-            var q = try query.from(TableT, self.allocator);
+            var q = try builder.from(TableT, self.allocator);
             defer q.deinit();
             _ = try q.where(condition);
 
@@ -204,6 +205,73 @@ pub fn Repo(comptime Adapter: type) type {
                 try results.append(self.allocator, item);
             }
             return results.toOwnedSlice(self.allocator);
+        }
+
+        /// Execute a raw SQL query and map results to ResultT
+        pub fn query(self: *Self, comptime ResultT: type, sql: [:0]const u8, params: []const core_types.Value) ![]ResultT {
+            var stmt = try self.adapter.prepare(sql);
+            defer stmt.deinit();
+
+            // Bind params
+            for (params, 0..) |param, i| {
+                switch (param) {
+                    .Integer => |val| try stmt.bind_int(i, val),
+                    .Text => |val| try stmt.bind_text(i, val),
+                    .Boolean => |val| try stmt.bind_int(i, if (val) 1 else 0),
+                    .Float, .Blob => return error.UnsupportedTypeBinding,
+                }
+            }
+
+            var results = try std.ArrayList(ResultT).initCapacity(self.allocator, 0);
+            errdefer results.deinit(self.allocator);
+
+            while (try stmt.step()) {
+                var item: ResultT = undefined;
+                const info = @typeInfo(ResultT);
+
+                if (info != .@"struct") @compileError("ResultT must be a struct");
+
+                inline for (info.@"struct".fields, 0..) |field, i| {
+                    const field_type = field.type;
+                    if (field_type == i64 or field_type == i32) {
+                        const val = Adapter.column_int(&stmt, i);
+                        @field(item, field.name) = @intCast(val);
+                    } else if (field_type == []const u8 or field_type == [:0]const u8) {
+                        const val_opt = Adapter.column_text(&stmt, i);
+                        if (val_opt) |val| {
+                            @field(item, field.name) = try self.allocator.dupe(u8, val);
+                        } else {
+                            @field(item, field.name) = "";
+                        }
+                    } else if (field_type == bool) {
+                        const val = Adapter.column_int(&stmt, i);
+                        @field(item, field.name) = (val != 0);
+                    } else {
+                        return error.UnsupportedTypeMapping;
+                    }
+                }
+                try results.append(self.allocator, item);
+            }
+
+            return try results.toOwnedSlice(self.allocator);
+        }
+
+        /// Execute a raw SQL statement (INSERT, UPDATE, DELETE, etc.)
+        pub fn execute(self: *Self, sql: [:0]const u8, params: []const core_types.Value) !void {
+            var stmt = try self.adapter.prepare(sql);
+            defer stmt.deinit();
+
+            // Bind params
+            for (params, 0..) |param, i| {
+                switch (param) {
+                    .Integer => |val| try stmt.bind_int(i, val),
+                    .Text => |val| try stmt.bind_text(i, val),
+                    .Boolean => |val| try stmt.bind_int(i, if (val) 1 else 0),
+                    .Float, .Blob => return error.UnsupportedTypeBinding,
+                }
+            }
+
+            _ = try stmt.step();
         }
     };
 }
