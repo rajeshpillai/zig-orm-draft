@@ -11,6 +11,7 @@ const HELP_TEXT =
     \\  help                    Show this help
     \\  version                 Show version
     \\  generate:migration <name> Create a new migration file
+    \\  generate:model <table_name> Generate Zig model struct from DB table
     \\  migrate                 Run pending migrations
     \\  rollback                Rollback last migration
     \\
@@ -52,10 +53,49 @@ pub fn main() !void {
         try executeMigrate(allocator);
     } else if (std.mem.eql(u8, command, "rollback")) {
         try executeRollback(allocator);
+    } else if (std.mem.eql(u8, command, "generate:model")) {
+        if (args.len < 3) {
+            std.debug.print("Error: table name required\nUsage: zig-orm generate:model <table_name>\n", .{});
+            return;
+        }
+        try generateModel(allocator, args[2]);
     } else {
         std.debug.print("Unknown command: {s}\n", .{command});
         std.debug.print("{s}", .{HELP_TEXT});
     }
+}
+
+fn generateModel(allocator: std.mem.Allocator, table_name: []const u8) !void {
+    const inspector = @import("inspector.zig");
+
+    // TODO: Support --db flag for custom path
+    // For now defaults to development.db like other commands
+    var db = try orm.sqlite.SQLite.init("development.db");
+    defer db.deinit();
+
+    std.debug.print("Inspecting table '{s}'...\n", .{table_name});
+
+    const columns = inspector.inspectSqlite(allocator, &db, table_name) catch |err| {
+        std.debug.print("Error inspecting table: {}\n", .{err});
+        return;
+    };
+    defer {
+        for (columns) |col| {
+            allocator.free(col.name);
+            allocator.free(col.type);
+        }
+        allocator.free(columns);
+    }
+
+    if (columns.len == 0) {
+        std.debug.print("No columns found for table '{s}'. Does it exist?\n", .{table_name});
+        return;
+    }
+
+    const code = try inspector.generateModelCode(allocator, table_name, columns);
+    defer allocator.free(code);
+
+    std.debug.print("\n// Generated Model for '{s}':\n\n{s}\n", .{ table_name, code });
 }
 
 fn executeMigrate(allocator: std.mem.Allocator) !void {
