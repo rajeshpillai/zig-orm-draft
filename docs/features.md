@@ -110,8 +110,18 @@ A comprehensive list of all features currently implemented in the Zig ORM librar
 ### Validation Framework
 - ✅ Declarative rules in model structs
 - ✅ Automatic validation before insert/update
+- ✅ Declarative rules in model structs
+- ✅ Automatic validation before insert/update
 - ✅ Detailed error messages
 - ✅ Custom validation functions
+
+### Schema Constraints (New in Phase 11)
+- ✅ `unique` constraints (single & composite)
+- ✅ `check` constraints (SQL conditions)
+- ✅ `foreign_key` constraints
+- ✅ Typed `ValidationError` mapping (UniqueViolation, ForeignKeyViolation, etc.)
+- ✅ Pre-flight validation
+
 
 ## Migrations
 
@@ -249,4 +259,5 @@ A comprehensive list of all features currently implemented in the Zig ORM librar
 ---
 
 **Last Updated**: December 28, 2024
-**Version**: Phase 9 (Soft Delete Complete)
+**Last Updated**: December 28, 2024
+**Version**: Phase 11 (Schema Constraints Complete)
