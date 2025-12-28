@@ -263,6 +263,19 @@ pub fn build(b: *std.Build) void {
     const run_locking_test = b.addRunArtifact(locking_test);
     test_step.dependOn(&run_locking_test.step);
 
+    // Postgres Locking tests
+    const pg_locking_test = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/postgres_locking_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    pg_locking_test.root_module.addImport("zig-orm", mod);
+    pg_locking_test.linkLibC();
+    const run_pg_locking_test = b.addRunArtifact(pg_locking_test);
+    test_step.dependOn(&run_pg_locking_test.step);
+
     // Model Hooks tests
     const hooks_tests = b.addTest(.{
         .root_module = b.createModule(.{
