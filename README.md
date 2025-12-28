@@ -150,7 +150,21 @@ pub const User = struct {
     pub fn afterInsert(self: *User) !void {
         std.debug.print("User {s} persisted successfully\n", .{self.name});
     }
+
+    // Runs before repository update
+    pub fn beforeUpdate(self: *User) !void {
+        // Validation or auditing logic
+    }
+
+    // Runs before repository deletion
+    pub fn beforeDelete(self: *User) !void {
+        // Cleanup or restriction logic
+    }
 };
+
+// Instance-based operations triggering hooks:
+try repo.updateModel(Users, &user);
+try repo.deleteModel(Users, &user);
 ```
 
 ### 6. Relationships

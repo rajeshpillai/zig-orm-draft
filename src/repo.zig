@@ -280,5 +280,81 @@ pub fn Repo(comptime Adapter: type) type {
 
             _ = try stmt.step();
         }
+
+        /// Update a specific model instance by ID, triggering hooks
+        pub fn updateModel(self: *Self, comptime TableT: type, item: *TableT.model_type) !void {
+            // Call beforeUpdate hook
+            try hooks.callHook(item, "beforeUpdate");
+
+            // Auto-update timestamps
+            if (comptime timestamps.hasUpdatedAt(TableT.model_type)) {
+                timestamps.setUpdatedAt(item);
+            }
+
+            var sql = std.ArrayList(u8){};
+            defer sql.deinit(self.allocator);
+
+            try sql.appendSlice(self.allocator, "UPDATE ");
+            try sql.appendSlice(self.allocator, TableT.table_name);
+            try sql.appendSlice(self.allocator, " SET ");
+
+            var first = true;
+            inline for (TableT.columns) |col| {
+                if (comptime std.mem.eql(u8, col.name, "id")) continue;
+                if (!first) try sql.appendSlice(self.allocator, ", ");
+                try sql.appendSlice(self.allocator, col.name);
+                try sql.appendSlice(self.allocator, " = ?");
+                first = false;
+            }
+
+            try sql.appendSlice(self.allocator, " WHERE id = ?");
+
+            const sql_z = try self.allocator.dupeZ(u8, sql.items);
+            defer self.allocator.free(sql_z);
+
+            var stmt = try self.adapter.prepare(sql_z);
+            defer stmt.deinit();
+
+            var bind_idx: usize = 0;
+            inline for (TableT.columns) |col| {
+                if (comptime std.mem.eql(u8, col.name, "id")) continue;
+                const val = @field(item.*, col.name);
+                switch (col.type) {
+                    .Integer => try stmt.bind_int(bind_idx, @intCast(val)),
+                    .Text => try stmt.bind_text(bind_idx, val),
+                    .Boolean => try stmt.bind_int(bind_idx, if (val) 1 else 0),
+                    else => return error.UnsupportedTypeBinding,
+                }
+                bind_idx += 1;
+            }
+
+            // Bind ID at the end
+            try stmt.bind_int(bind_idx, @intCast(item.id));
+
+            _ = try stmt.step();
+
+            // Call afterUpdate hook
+            try hooks.callHook(item, "afterUpdate");
+        }
+
+        /// Delete a specific model instance by ID, triggering hooks
+        pub fn deleteModel(self: *Self, comptime TableT: type, item: *TableT.model_type) !void {
+            // Call beforeDelete hook
+            try hooks.callHook(item, "beforeDelete");
+
+            const sql_raw = try std.fmt.allocPrint(self.allocator, "DELETE FROM {s} WHERE id = ?", .{TableT.table_name});
+            defer self.allocator.free(sql_raw);
+            const sql = try self.allocator.dupeZ(u8, sql_raw);
+            defer self.allocator.free(sql);
+
+            var stmt = try self.adapter.prepare(sql);
+            defer stmt.deinit();
+
+            try stmt.bind_int(0, @intCast(item.id));
+            _ = try stmt.step();
+
+            // Call afterDelete hook
+            try hooks.callHook(item, "afterDelete");
+        }
     };
 }
