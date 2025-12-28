@@ -169,4 +169,18 @@ pub fn build(b: *std.Build) void {
 
     const run_raw_sql_tests = b.addRunArtifact(raw_sql_tests);
     test_step.dependOn(&run_raw_sql_tests.step);
+
+    // Query builder tests
+    const query_builder_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/query_builder_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    query_builder_tests.root_module.addImport("zig-orm", mod);
+    query_builder_tests.linkLibC();
+
+    const run_query_builder_tests = b.addRunArtifact(query_builder_tests);
+    test_step.dependOn(&run_query_builder_tests.step);
 }

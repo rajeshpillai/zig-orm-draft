@@ -6,6 +6,8 @@ zig-out/
 zig-cache/**/*
 zig-out/**/*
 
+reference/
+
 node_modules
 
 error*.txt

@@ -2,6 +2,50 @@ const std = @import("std");
 const core_types = @import("../core/types.zig");
 const timestamps = @import("../core/timestamps.zig");
 
+pub const Operator = enum {
+    eq,
+    neq,
+    gt,
+    gte,
+    lt,
+    lte,
+    like,
+    in,
+    not_in,
+    is_null,
+    is_not_null,
+
+    pub fn toSql(self: Operator) []const u8 {
+        return switch (self) {
+            .eq => "=",
+            .neq => "!=",
+            .gt => ">",
+            .gte => ">=",
+            .lt => "<",
+            .lte => "<=",
+            .like => "LIKE",
+            .in => "IN",
+            .not_in => "NOT IN",
+            .is_null => "IS NULL",
+            .is_not_null => "IS NOT NULL",
+        };
+    }
+};
+
+pub const Logical = enum {
+    AND,
+    OR,
+    NOT,
+
+    pub fn toSql(self: Logical) []const u8 {
+        return switch (self) {
+            .AND => "AND",
+            .OR => "OR",
+            .NOT => "NOT",
+        };
+    }
+};
+
 pub fn Query(comptime TableT: type) type {
     return struct {
         pub const Table = TableT;
@@ -28,58 +72,133 @@ pub fn Query(comptime TableT: type) type {
 
         // Allow chaining
         pub fn where(self: *Self, condition: anytype) !*Self {
+            return try self.whereInternal(condition, true);
+        }
+
+        fn whereInternal(self: *Self, condition: anytype, add_prefix: bool) !*Self {
             const T = @TypeOf(condition);
             const info = @typeInfo(T);
 
-            // Zig master: .Struct -> .@"struct"
+            // Handle Tuple Conditions: .{ .field, .operator, value }
+            if (info == .@"struct" and info.@"struct".is_tuple) {
+                const fields = info.@"struct".fields;
+                if (fields.len == 3) {
+                    const field_or_expr = @field(condition, "0");
+                    const op_or_log_val = @field(condition, "1");
+                    const val_or_expr = @field(condition, "2");
+
+                    const op_or_log_type = @TypeOf(op_or_log_val);
+                    const op_or_log_info = @typeInfo(op_or_log_type);
+
+                    const maybe_op: ?Operator = comptime blk: {
+                        if (op_or_log_type == Operator) break :blk op_or_log_val;
+                        if (op_or_log_info == .@"enum" or op_or_log_info == .enum_literal) {
+                            for (std.enums.values(Operator)) |op| {
+                                if (std.mem.eql(u8, @tagName(op), @tagName(op_or_log_val))) break :blk op;
+                            }
+                        }
+                        break :blk null;
+                    };
+                    const maybe_log: ?Logical = comptime blk: {
+                        if (op_or_log_type == Logical) break :blk op_or_log_val;
+                        if (op_or_log_info == .@"enum" or op_or_log_info == .enum_literal) {
+                            for (std.enums.values(Logical)) |log| {
+                                if (std.mem.eql(u8, @tagName(log), @tagName(op_or_log_val))) break :blk log;
+                            }
+                        }
+                        break :blk null;
+                    };
+
+                    if (maybe_op) |op| {
+                        if (add_prefix and self.where_exprs.items.len > 0) {
+                            try self.where_exprs.appendSlice(self.allocator, " AND ");
+                        }
+
+                        const field_str = blk: {
+                            const FT = @TypeOf(field_or_expr);
+                            if (FT == []const u8) break :blk field_or_expr;
+                            if (@typeInfo(FT) == .@"enum" or @typeInfo(FT) == .enum_literal) break :blk @tagName(field_or_expr);
+                            break :blk "";
+                        };
+                        try self.where_exprs.appendSlice(self.allocator, field_str);
+                        try self.where_exprs.appendSlice(self.allocator, " ");
+                        try self.where_exprs.appendSlice(self.allocator, op.toSql());
+
+                        if (op != .is_null and op != .is_not_null) {
+                            try self.where_exprs.appendSlice(self.allocator, " ?");
+                            try self.addParam(val_or_expr);
+                        }
+                        return self;
+                    }
+
+                    if (maybe_log) |log| {
+                        if (add_prefix and self.where_exprs.items.len > 0) {
+                            try self.where_exprs.appendSlice(self.allocator, " AND ");
+                        }
+                        try self.where_exprs.appendSlice(self.allocator, "(");
+
+                        const FT = @TypeOf(field_or_expr);
+                        if (comptime @typeInfo(FT) == .@"struct") {
+                            _ = try self.whereInternal(field_or_expr, false);
+                        } else {
+                            return error.InvalidConditionType;
+                        }
+
+                        try self.where_exprs.appendSlice(self.allocator, " ");
+                        try self.where_exprs.appendSlice(self.allocator, log.toSql());
+                        try self.where_exprs.appendSlice(self.allocator, " ");
+
+                        const VT = @TypeOf(val_or_expr);
+                        if (comptime @typeInfo(VT) == .@"struct") {
+                            _ = try self.whereInternal(val_or_expr, false);
+                        } else {
+                            return error.InvalidConditionType;
+                        }
+
+                        try self.where_exprs.appendSlice(self.allocator, ")");
+                        return self;
+                    }
+                }
+            }
+
+            // Fallback to existing struct-based equality
             if (info != .@"struct") @compileError("Condition must be a struct");
 
             inline for (info.@"struct".fields) |field| {
-                if (self.where_exprs.items.len > 0) {
+                if (add_prefix and self.where_exprs.items.len > 0) {
                     try self.where_exprs.appendSlice(self.allocator, " AND ");
                 }
 
                 try self.where_exprs.appendSlice(self.allocator, field.name);
                 try self.where_exprs.appendSlice(self.allocator, " = ?");
 
-                const val = @field(condition, field.name);
-                const val_t = @TypeOf(val);
+                try self.addParam(@field(condition, field.name));
+            }
+            return self;
+        }
 
-                // Inspect type to handle params
-                const type_info = @typeInfo(val_t);
-
-                // Handle String Literal / Slice
-                var handled = false;
-
-                // Zig master: .Pointer -> .pointer
-                if (type_info == .pointer) {
-                    const ptr_info = type_info.pointer;
-                    if (ptr_info.size == .one) {
-                        const child_info = @typeInfo(ptr_info.child);
-                        // Zig master: .Array -> .array
-                        if (child_info == .array) {
-                            if (child_info.array.child == u8) {
-                                const slice: []const u8 = val;
-                                try self.params.append(self.allocator, .{ .Text = slice });
-                                handled = true;
-                            }
-                        }
-                    }
-                }
-
-                if (!handled) {
-                    if (val_t == []const u8 or val_t == [:0]const u8) {
+        fn addParam(self: *Self, val: anytype) !void {
+            const T = @TypeOf(val);
+            switch (@typeInfo(T)) {
+                .int, .comptime_int => try self.params.append(self.allocator, .{ .Integer = @intCast(val) }),
+                .bool => try self.params.append(self.allocator, .{ .Boolean = val }),
+                .pointer => |ptr| {
+                    if (ptr.child == u8) {
                         try self.params.append(self.allocator, .{ .Text = val });
-                    } else if (val_t == i64 or val_t == i32 or val_t == comptime_int) {
-                        try self.params.append(self.allocator, .{ .Integer = @intCast(val) });
-                    } else if (val_t == bool) {
-                        try self.params.append(self.allocator, .{ .Boolean = val });
+                    } else if (@typeInfo(ptr.child) == .array and (@typeInfo(ptr.child).array.child == u8 or @typeInfo(ptr.child).array.child == comptime_int)) {
+                        try self.params.append(self.allocator, .{ .Text = val });
                     } else {
                         return error.UnsupportedTypeInWhere;
                     }
-                }
+                },
+                .optional => {
+                    if (val) |v| {
+                        try self.addParam(v);
+                    }
+                },
+                .null => {},
+                else => return error.UnsupportedTypeInWhere,
             }
-            return self;
         }
 
         /// Add WHERE field IN (?, ?, ...) clause
