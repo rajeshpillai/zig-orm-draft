@@ -95,7 +95,7 @@ pub fn MigrationRunner(comptime Adapter: type) type {
                 std.debug.print("Applying migration {d}: {s}\n", .{ migration.version, migration.name });
                 try migration.up(@ptrCast(self.adapter));
                 try self.recordMigration(migration);
-                std.debug.print("✓ Migration {d} applied\n", .{migration.version});
+                std.debug.print("OK: Migration {d} applied\n", .{migration.version});
             }
         }
 
@@ -117,7 +117,7 @@ pub fn MigrationRunner(comptime Adapter: type) type {
                 std.debug.print("Rolling back migration {d}: {s}\n", .{ migration.version, migration.name });
                 try migration.down(@ptrCast(self.adapter));
                 try self.removeMigration(migration.version);
-                std.debug.print("✓ Migration {d} rolled back\n", .{migration.version});
+                std.debug.print("OK: Migration {d} rolled back\n", .{migration.version});
 
                 rolled_back += 1;
             }
