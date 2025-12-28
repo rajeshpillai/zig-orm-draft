@@ -290,6 +290,19 @@ pub fn build(b: *std.Build) void {
     const run_hooks_tests = b.addRunArtifact(hooks_tests);
     test_step.dependOn(&run_hooks_tests.step);
 
+    // Postgres Hooks tests
+    const pg_hooks_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/pg/hooks_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    pg_hooks_tests.root_module.addImport("zig-orm", mod);
+    pg_hooks_tests.linkLibC();
+    const run_pg_hooks_tests = b.addRunArtifact(pg_hooks_tests);
+    test_step.dependOn(&run_pg_hooks_tests.step);
+
     // Aggregates tests
     const aggregates_tests = b.addTest(.{
         .root_module = b.createModule(.{
@@ -304,6 +317,19 @@ pub fn build(b: *std.Build) void {
     const run_aggregates_tests = b.addRunArtifact(aggregates_tests);
     test_step.dependOn(&run_aggregates_tests.step);
 
+    // Postgres Aggregates tests
+    const pg_aggregates_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/pg/aggregates_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    pg_aggregates_tests.root_module.addImport("zig-orm", mod);
+    pg_aggregates_tests.linkLibC();
+    const run_pg_aggregates_tests = b.addRunArtifact(pg_aggregates_tests);
+    test_step.dependOn(&run_pg_aggregates_tests.step);
+
     // Joins tests
     const joins_tests = b.addTest(.{
         .root_module = b.createModule(.{
@@ -317,4 +343,17 @@ pub fn build(b: *std.Build) void {
 
     const run_joins_tests = b.addRunArtifact(joins_tests);
     test_step.dependOn(&run_joins_tests.step);
+
+    // Postgres Joins tests
+    const pg_joins_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/pg/joins_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    pg_joins_tests.root_module.addImport("zig-orm", mod);
+    pg_joins_tests.linkLibC();
+    const run_pg_joins_tests = b.addRunArtifact(pg_joins_tests);
+    test_step.dependOn(&run_pg_joins_tests.step);
 }
