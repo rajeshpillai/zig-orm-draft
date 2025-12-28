@@ -13,6 +13,7 @@ pub const ConnectionPool = @import("pool.zig").ConnectionPool;
 pub const migrations = @import("migrations/runner.zig");
 pub const validation = @import("validation/validator.zig");
 pub const timestamps = @import("core/timestamps.zig");
+pub const hooks = @import("core/hooks.zig");
 
 test {
     _ = sqlite;

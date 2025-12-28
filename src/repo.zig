@@ -3,6 +3,7 @@ const builder = @import("builder/query.zig");
 const timestamps = @import("core/timestamps.zig");
 const validation = @import("validation/validator.zig");
 const core_types = @import("core/types.zig");
+const hooks = @import("core/hooks.zig");
 
 pub fn Repo(comptime Adapter: type) type {
     return struct {
@@ -48,6 +49,9 @@ pub fn Repo(comptime Adapter: type) type {
             const Cols = Q.Table.columns;
 
             for (q.items.items) |*item| {
+                // Call beforeInsert hook
+                try hooks.callHook(item, "beforeInsert");
+
                 // Auto-validate
                 try validation.validate(item);
 
@@ -70,6 +74,9 @@ pub fn Repo(comptime Adapter: type) type {
                 }
 
                 _ = try stmt.step();
+
+                // Call afterInsert hook
+                try hooks.callHook(item, "afterInsert");
             }
         }
 
