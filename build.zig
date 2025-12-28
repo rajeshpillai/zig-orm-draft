@@ -111,6 +111,19 @@ pub fn build(b: *std.Build) void {
     const run_relations_tests = b.addRunArtifact(relations_tests);
     test_step.dependOn(&run_relations_tests.step);
 
+    // Postgres Relations tests
+    const pg_relations_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/pg/relations_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    pg_relations_tests.root_module.addImport("zig-orm", mod);
+    pg_relations_tests.linkLibC();
+    const run_pg_relations_tests = b.addRunArtifact(pg_relations_tests);
+    test_step.dependOn(&run_pg_relations_tests.step);
+
     // Preload tests
     const preload_tests = b.addTest(.{
         .root_module = b.createModule(.{
@@ -125,6 +138,19 @@ pub fn build(b: *std.Build) void {
     const run_preload_tests = b.addRunArtifact(preload_tests);
     test_step.dependOn(&run_preload_tests.step);
 
+    // Postgres Preload tests
+    const pg_preload_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/pg/preload_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    pg_preload_tests.root_module.addImport("zig-orm", mod);
+    pg_preload_tests.linkLibC();
+    const run_pg_preload_tests = b.addRunArtifact(pg_preload_tests);
+    test_step.dependOn(&run_pg_preload_tests.step);
+
     // Many-to-Many tests
     const m2m_tests = b.addTest(.{
         .root_module = b.createModule(.{
@@ -138,6 +164,19 @@ pub fn build(b: *std.Build) void {
 
     const run_m2m_tests = b.addRunArtifact(m2m_tests);
     test_step.dependOn(&run_m2m_tests.step);
+
+    // Postgres Many-to-Many tests
+    const pg_m2m_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/pg/many_to_many_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    pg_m2m_tests.root_module.addImport("zig-orm", mod);
+    pg_m2m_tests.linkLibC();
+    const run_pg_m2m_tests = b.addRunArtifact(pg_m2m_tests);
+    test_step.dependOn(&run_pg_m2m_tests.step);
 
     // PostgreSQL tests (optional - requires PostgreSQL installation)
     const postgres_tests = b.addTest(.{

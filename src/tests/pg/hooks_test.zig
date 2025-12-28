@@ -24,14 +24,14 @@ const CONN_STR = "postgresql://postgres:root123@localhost:5432/mydb";
 test "pg hooks - beforeInsert success" {
     var db = try orm.postgres.PostgreSQL.init(CONN_STR);
     defer db.deinit();
-    try db.exec("DROP TABLE IF EXISTS users");
-    try db.exec("CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT, hook_called BOOLEAN)");
+    try db.exec("DROP TABLE IF EXISTS users_hook");
+    try db.exec("CREATE TABLE users_hook (id SERIAL PRIMARY KEY, name TEXT, hook_called BOOLEAN)");
 
     const Repo = orm.Repo(orm.postgres.PostgreSQL);
     var repo = try Repo.init(std.testing.allocator, CONN_STR);
     defer repo.deinit();
 
-    const Users = orm.Table(User, "users");
+    const Users = orm.Table(User, "users_hook");
 
     var changeset = try Users.insert(std.testing.allocator);
     defer changeset.deinit();
@@ -46,14 +46,14 @@ test "pg hooks - beforeInsert success" {
 test "pg hooks - beforeInsert failure" {
     var db = try orm.postgres.PostgreSQL.init(CONN_STR);
     defer db.deinit();
-    try db.exec("DROP TABLE IF EXISTS users");
-    try db.exec("CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT, hook_called BOOLEAN)");
+    try db.exec("DROP TABLE IF EXISTS users_hook");
+    try db.exec("CREATE TABLE users_hook (id SERIAL PRIMARY KEY, name TEXT, hook_called BOOLEAN)");
 
     const Repo = orm.Repo(orm.postgres.PostgreSQL);
     var repo = try Repo.init(std.testing.allocator, CONN_STR);
     defer repo.deinit();
 
-    const Users = orm.Table(User, "users");
+    const Users = orm.Table(User, "users_hook");
 
     var changeset = try Users.insert(std.testing.allocator);
     defer changeset.deinit();
@@ -67,14 +67,14 @@ test "pg hooks - beforeInsert failure" {
 test "pg hooks - Update and Delete" {
     var db = try orm.postgres.PostgreSQL.init(CONN_STR);
     defer db.deinit();
-    try db.exec("DROP TABLE IF EXISTS users");
-    try db.exec("CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT, hook_called BOOLEAN)");
+    try db.exec("DROP TABLE IF EXISTS users_hook");
+    try db.exec("CREATE TABLE users_hook (id SERIAL PRIMARY KEY, name TEXT, hook_called BOOLEAN)");
 
     const Repo = orm.Repo(orm.postgres.PostgreSQL);
     var repo = try Repo.init(std.testing.allocator, CONN_STR);
     defer repo.deinit();
 
-    const Users = orm.Table(User, "users");
+    const Users = orm.Table(User, "users_hook");
 
     // 1. Insert
     var user = User{ .id = 1, .name = "Alice", .hook_called = false };

@@ -13,14 +13,14 @@ const CONN_STR = "postgresql://postgres:root123@localhost:5432/mydb";
 test "pg aggregates - count" {
     var db = try orm.postgres.PostgreSQL.init(CONN_STR);
     defer db.deinit();
-    try db.exec("DROP TABLE IF EXISTS users");
-    try db.exec("CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT, age INTEGER, active BOOLEAN)");
+    try db.exec("DROP TABLE IF EXISTS users_agg");
+    try db.exec("CREATE TABLE users_agg (id SERIAL PRIMARY KEY, name TEXT, age INTEGER, active BOOLEAN)");
 
     const Repo = orm.Repo(orm.postgres.PostgreSQL);
     var repo = try Repo.init(std.testing.allocator, CONN_STR);
     defer repo.deinit();
 
-    const Users = orm.Table(User, "users");
+    const Users = orm.Table(User, "users_agg");
 
     // Insert test data
     var changeset = try Users.insert(std.testing.allocator);
@@ -47,14 +47,14 @@ test "pg aggregates - count" {
 test "pg aggregates - scalar (sum)" {
     var db = try orm.postgres.PostgreSQL.init(CONN_STR);
     defer db.deinit();
-    try db.exec("DROP TABLE IF EXISTS users");
-    try db.exec("CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT, age INTEGER, active BOOLEAN)");
+    try db.exec("DROP TABLE IF EXISTS users_agg");
+    try db.exec("CREATE TABLE users_agg (id SERIAL PRIMARY KEY, name TEXT, age INTEGER, active BOOLEAN)");
 
     const Repo = orm.Repo(orm.postgres.PostgreSQL);
     var repo = try Repo.init(std.testing.allocator, CONN_STR);
     defer repo.deinit();
 
-    const Users = orm.Table(User, "users");
+    const Users = orm.Table(User, "users_agg");
 
     var changeset = try Users.insert(std.testing.allocator);
     defer changeset.deinit();
@@ -72,14 +72,14 @@ test "pg aggregates - scalar (sum)" {
 test "pg aggregates - group by" {
     var db = try orm.postgres.PostgreSQL.init(CONN_STR);
     defer db.deinit();
-    try db.exec("DROP TABLE IF EXISTS users");
-    try db.exec("CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT, age INTEGER, active BOOLEAN)");
+    try db.exec("DROP TABLE IF EXISTS users_agg");
+    try db.exec("CREATE TABLE users_agg (id SERIAL PRIMARY KEY, name TEXT, age INTEGER, active BOOLEAN)");
 
     const Repo = orm.Repo(orm.postgres.PostgreSQL);
     var repo = try Repo.init(std.testing.allocator, CONN_STR);
     defer repo.deinit();
 
-    const Users = orm.Table(User, "users");
+    const Users = orm.Table(User, "users_agg");
 
     var changeset = try Users.insert(std.testing.allocator);
     defer changeset.deinit();

@@ -8,7 +8,7 @@ const Product = struct {
     version: i64,
 };
 
-const Products = orm.Table(Product, "products");
+const Products = orm.Table(Product, "products_lock");
 
 // Default local connection string
 const CONN_STR = "postgresql://postgres:root123@localhost:5432/mydb";
@@ -18,8 +18,8 @@ test "postgres optimistic locking - increments version on update" {
     defer db.deinit();
 
     // Setup table
-    try db.exec("DROP TABLE IF EXISTS products");
-    try db.exec("CREATE TABLE products (id SERIAL PRIMARY KEY, name TEXT, version INTEGER)");
+    try db.exec("DROP TABLE IF EXISTS products_lock");
+    try db.exec("CREATE TABLE products_lock (id SERIAL PRIMARY KEY, name TEXT, version INTEGER)");
 
     const Repo = orm.Repo(orm.postgres.PostgreSQL);
     var repo = try Repo.init(testing.allocator, CONN_STR);
@@ -27,7 +27,7 @@ test "postgres optimistic locking - increments version on update" {
 
     // Insert
     var p = Product{ .id = 1, .name = "Widget", .version = 1 };
-    try db.exec("INSERT INTO products (id, name, version) VALUES (1, 'Widget', 1)");
+    try db.exec("INSERT INTO products_lock (id, name, version) VALUES (1, 'Widget', 1)");
 
     // Update
     p.name = "Widget V2";
@@ -47,20 +47,20 @@ test "postgres optimistic locking - detects stale object" {
     var db = try orm.postgres.PostgreSQL.init(CONN_STR);
     defer db.deinit();
 
-    try db.exec("DROP TABLE IF EXISTS products");
-    try db.exec("CREATE TABLE products (id SERIAL PRIMARY KEY, name TEXT, version INTEGER)");
+    try db.exec("DROP TABLE IF EXISTS products_lock");
+    try db.exec("CREATE TABLE products_lock (id SERIAL PRIMARY KEY, name TEXT, version INTEGER)");
 
     const Repo = orm.Repo(orm.postgres.PostgreSQL);
     var repo = try Repo.init(testing.allocator, CONN_STR);
     defer repo.deinit();
 
     // Insert initial record (Version 1)
-    try db.exec("INSERT INTO products (id, name, version) VALUES (1, 'Widget', 1)");
+    try db.exec("INSERT INTO products_lock (id, name, version) VALUES (1, 'Widget', 1)");
 
     var p = Product{ .id = 1, .name = "Widget", .version = 1 };
 
     // Simulate concurrent update: Someone else updates row to Version 2
-    try db.exec("UPDATE products SET version = 2 WHERE id = 1");
+    try db.exec("UPDATE products_lock SET version = 2 WHERE id = 1");
 
     // Now try to update p (which still thinks version is 1)
     p.name = "My Update";

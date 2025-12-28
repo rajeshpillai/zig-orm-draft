@@ -22,17 +22,17 @@ const CONN_STR = "postgresql://postgres:root123@localhost:5432/mydb";
 test "pg joins - inner join" {
     var db = try orm.postgres.PostgreSQL.init(CONN_STR);
     defer db.deinit();
-    try db.exec("DROP TABLE IF EXISTS posts");
-    try db.exec("DROP TABLE IF EXISTS users");
-    try db.exec("CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT)");
-    try db.exec("CREATE TABLE posts (id SERIAL PRIMARY KEY, user_id INTEGER, title TEXT)");
+    try db.exec("DROP TABLE IF EXISTS posts_join");
+    try db.exec("DROP TABLE IF EXISTS users_join");
+    try db.exec("CREATE TABLE users_join (id SERIAL PRIMARY KEY, name TEXT)");
+    try db.exec("CREATE TABLE posts_join (id SERIAL PRIMARY KEY, user_id INTEGER, title TEXT)");
 
     const Repo = orm.Repo(orm.postgres.PostgreSQL);
     var repo = try Repo.init(std.testing.allocator, CONN_STR);
     defer repo.deinit();
 
-    const Users = orm.Table(User, "users");
-    const Posts = orm.Table(Post, "posts");
+    const Users = orm.Table(User, "users_join");
+    const Posts = orm.Table(Post, "posts_join");
 
     // Seed data
     var user_cs = try Users.insert(std.testing.allocator);
@@ -47,9 +47,9 @@ test "pg joins - inner join" {
 
     var q = try orm.from(Posts, std.testing.allocator);
     defer q.deinit();
-    _ = try q.select("posts.title as post_title");
-    _ = try q.select("users.name as user_name");
-    _ = try q.innerJoin(Users, "posts.user_id = users.id");
+    _ = try q.select("posts_join.title as post_title");
+    _ = try q.select("users_join.name as user_name");
+    _ = try q.innerJoin(Users, "posts_join.user_id = users_join.id");
 
     const results = try repo.allAs(PostWithUser, &q);
     defer {
@@ -68,17 +68,17 @@ test "pg joins - inner join" {
 test "pg joins - left join" {
     var db = try orm.postgres.PostgreSQL.init(CONN_STR);
     defer db.deinit();
-    try db.exec("DROP TABLE IF EXISTS posts");
-    try db.exec("DROP TABLE IF EXISTS users");
-    try db.exec("CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT)");
-    try db.exec("CREATE TABLE posts (id SERIAL PRIMARY KEY, user_id INTEGER, title TEXT)");
+    try db.exec("DROP TABLE IF EXISTS posts_join");
+    try db.exec("DROP TABLE IF EXISTS users_join");
+    try db.exec("CREATE TABLE users_join (id SERIAL PRIMARY KEY, name TEXT)");
+    try db.exec("CREATE TABLE posts_join (id SERIAL PRIMARY KEY, user_id INTEGER, title TEXT)");
 
     const Repo = orm.Repo(orm.postgres.PostgreSQL);
     var repo = try Repo.init(std.testing.allocator, CONN_STR);
     defer repo.deinit();
 
-    const Users = orm.Table(User, "users");
-    const Posts = orm.Table(Post, "posts");
+    const Users = orm.Table(User, "users_join");
+    const Posts = orm.Table(Post, "posts_join");
 
     // Seed data
     var user_cs = try Users.insert(std.testing.allocator);
@@ -95,9 +95,9 @@ test "pg joins - left join" {
     // Join Users -> Posts (Left Join)
     var q = try orm.from(Users, std.testing.allocator);
     defer q.deinit();
-    _ = try q.select("users.name as user_name");
-    _ = try q.select("COALESCE(posts.title, 'No Post') as post_title");
-    _ = try q.leftJoin(Posts, "users.id = posts.user_id");
+    _ = try q.select("users_join.name as user_name");
+    _ = try q.select("COALESCE(posts_join.title, 'No Post') as post_title");
+    _ = try q.leftJoin(Posts, "users_join.id = posts_join.user_id");
 
     const results = try repo.allAs(PostWithUser, &q);
     defer {
