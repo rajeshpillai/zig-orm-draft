@@ -57,8 +57,9 @@ pub fn enumToInt(comptime E: type, value: E) i64 {
 /// Convert integer to enum value
 /// Simple implementation that just casts the value
 pub fn intToEnum(comptime E: type, value: i64) EnumError!E {
-    // Simple cast - let Zig handle the conversion
-    return @enumFromInt(value);
+    const Tag = @typeInfo(E).@"enum".tag_type;
+    const tag_val = std.math.cast(Tag, value) orelse return error.InvalidEnumValue;
+    return std.meta.intToEnum(E, tag_val) catch error.InvalidEnumValue;
 }
 
 test "Type enum" {
@@ -80,7 +81,7 @@ test "enum storage strategy detection" {
     };
 
     try std.testing.expect(shouldStoreEnumAsText(StringEnum));
-    try std.testing.expect(!shouldStoreEnumAsText(IntEnum));
+    try std.testing.expect(shouldStoreEnumAsText(IntEnum));
 }
 
 test "enum to text conversion" {

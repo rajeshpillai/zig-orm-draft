@@ -432,7 +432,7 @@ pub fn Repo(comptime Adapter: type) type {
                         }
                     } else {
                         // Handle regular non-optional types
-                        switch (col.type) {
+                        switch (@as(core_types.Type, col.type)) {
                             .Integer => {
                                 const val = Adapter.column_int(&stmt, i);
                                 @field(item, col.name) = @intCast(val);

@@ -382,3 +382,9 @@ repo.updateModel(Products, &product) catch |err| {
 *   **Driver-agnostic core**: Separation between Builder/Schema and Adapter.
 *   **No Runtime Reflection**: Leveraging Zig's comptime for safety and performance.
 *   **Think “typed SQL builder + mapper”**: Explicit over magic.
+
+
+## References
+- [Ziglang](https://ziglang.org/)
+- [JetQuery](https://github.com/jetzig-framework/jetquery)
+- [pg.zig](https://github.com/karlseguin/pg.zig)

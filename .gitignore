@@ -6,7 +6,7 @@ zig-out/
 zig-cache/**/*
 zig-out/**/*
 
-# reference/
+reference/
 
 
 # Database files and test migrations (library development only)
