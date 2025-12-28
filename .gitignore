@@ -8,6 +8,8 @@ zig-out/**/*
 
 reference/
 
+test*.txt
+
 node_modules
 
 error*.txt
