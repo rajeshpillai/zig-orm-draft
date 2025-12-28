@@ -33,11 +33,12 @@ This document provides an honest assessment of the Zig ORM's production readines
 - **Recommendation**: Pin to a specific Zig version in your build
 
 **2. Missing Features (Nice-to-Have)**
-- ❌ Enum mapping (Zig enum ↔ DB types)
+- ❌ Enum mapping (Zig enum ↔ DB types) - **✅ NOW IMPLEMENTED**
 - ❌ Advanced transactions (savepoints, isolation levels)
 - ❌ Query caching
 - ❌ Database connection health checks
 - ❌ Automatic retry logic for transient failures
+- ❌ DateTime type support (parsing, formatting, timezone handling)
 
 **3. Testing in Your Environment**
 - ✅ Well-tested in development
@@ -54,7 +55,7 @@ This document provides an honest assessment of the Zig ORM's production readines
 - Complex transaction scenarios
 - Long-running queries and timeouts
 
-## Production Readiness Score: 7.5/10
+## Production Readiness Score: 8/10
 
 ### ✅ Ready For:
 - Internal tools and services
