@@ -14,6 +14,7 @@ pub const migrations = @import("migrations/runner.zig");
 pub const validation = @import("validation/validator.zig");
 pub const timestamps = @import("core/timestamps.zig");
 pub const hooks = @import("core/hooks.zig");
+pub const logging = @import("core/logging.zig");
 
 test {
     _ = sqlite;

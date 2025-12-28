@@ -4,6 +4,7 @@ const timestamps = @import("core/timestamps.zig");
 const validation = @import("validation/validator.zig");
 const core_types = @import("core/types.zig");
 const hooks = @import("core/hooks.zig");
+const logging = @import("core/logging.zig");
 
 pub fn Repo(comptime Adapter: type) type {
     return struct {
@@ -11,13 +12,28 @@ pub fn Repo(comptime Adapter: type) type {
 
         adapter: Adapter,
         allocator: std.mem.Allocator,
+        log_fn: ?logging.LogFn = null,
 
         pub fn init(allocator: std.mem.Allocator, connection_string: [:0]const u8) !Self {
             const adapter = try Adapter.init(connection_string);
             return Self{
                 .adapter = adapter,
                 .allocator = allocator,
+                .log_fn = null,
             };
+        }
+
+        pub fn setLogger(self: *Self, logger: logging.LogFn) void {
+            self.log_fn = logger;
+        }
+
+        fn dispatchLog(self: *Self, sql: []const u8, duration_ns: u64) void {
+            if (self.log_fn) |log| {
+                log(.{
+                    .sql = sql,
+                    .duration_ns = duration_ns,
+                });
+            }
         }
 
         pub fn deinit(self: *Self) void {
