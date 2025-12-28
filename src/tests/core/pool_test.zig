@@ -227,7 +227,10 @@ fn worker(pool: *orm.Pool(ThreadMockAdapter)) !void {
     var adapter = try pool.acquire();
     defer adapter.deinit();
     // Simulate work
-    std.time.sleep(10 * std.time.ns_per_ms);
+    var i: usize = 0;
+    while (i < 100000) : (i += 1) {
+        std.atomic.spinLoopHint();
+    }
 }
 
 test "core - pool thread contention" {

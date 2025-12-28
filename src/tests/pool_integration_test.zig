@@ -8,7 +8,7 @@ const postgres = orm.postgres;
 
 test "pool - sqlite integration" {
     // 1. Create Pool
-    var pool = try Pool(sqlite.SQLite3).init(testing.allocator, .{ .max_connections = 2 }, ":memory:");
+    var pool = try Pool(sqlite.SQLite).init(testing.allocator, .{ .max_connections = 2 }, ":memory:");
     defer pool.deinit();
 
     // 2. Acquire connection
@@ -56,10 +56,10 @@ test "pool - postgres integration" {
     // Let's grab a second connection for Repo.
 
     {
-        var conn2 = try pool.acquire();
+        const conn2 = try pool.acquire();
         // Repo takes ownership of conn2
         // But Repo.deinit() calls conn2.deinit(), which releases it to pool.
-        const repo = Repo(PooledPG).initFromAdapter(testing.allocator, conn2);
+        var repo = Repo(PooledPG).initFromAdapter(testing.allocator, conn2);
         defer repo.deinit();
 
         const User = struct {
