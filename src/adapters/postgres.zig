@@ -9,6 +9,7 @@ const c = @cImport({
 pub const PostgreSQL = struct {
     conn: ?*c.PGconn,
     allocator: Allocator,
+    affected_rows: usize = 0,
 
     pub fn init(connection_string: [:0]const u8) !PostgreSQL {
         const conn = c.PQconnectdb(connection_string.ptr);
@@ -22,6 +23,7 @@ pub const PostgreSQL = struct {
         return PostgreSQL{
             .conn = conn,
             .allocator = std.heap.page_allocator, // TODO: Use proper allocator
+            .affected_rows = 0,
         };
     }
 
@@ -40,6 +42,14 @@ pub const PostgreSQL = struct {
             const err_msg = c.PQerrorMessage(self.conn);
             std.debug.print("PostgreSQL exec failed: {s}\n", .{err_msg});
             return error.ExecFailed;
+        }
+
+        const tuples_ptr = c.PQcmdTuples(result);
+        const tuples_span = std.mem.span(tuples_ptr);
+        if (tuples_span.len > 0) {
+            self.affected_rows = std.fmt.parseInt(usize, tuples_span, 10) catch 0;
+        } else {
+            self.affected_rows = 0;
         }
     }
 
@@ -64,6 +74,7 @@ pub const PostgreSQL = struct {
         const converted_sql = try self.allocator.dupeZ(u8, converted.items);
 
         return Stmt{
+            .db = self,
             .conn = self.conn,
             .sql = converted_sql,
             .params = .{},
@@ -75,6 +86,7 @@ pub const PostgreSQL = struct {
     }
 
     pub const Stmt = struct {
+        db: *PostgreSQL,
         conn: ?*c.PGconn,
         sql: [:0]const u8,
         params: std.ArrayList([:0]const u8),
@@ -131,6 +143,14 @@ pub const PostgreSQL = struct {
                     return error.QueryFailed;
                 }
 
+                const tuples_ptr = c.PQcmdTuples(self.result);
+                const tuples_span = std.mem.span(tuples_ptr);
+                if (tuples_span.len > 0) {
+                    self.db.affected_rows = std.fmt.parseInt(usize, tuples_span, 10) catch 0;
+                } else {
+                    self.db.affected_rows = 0;
+                }
+
                 self.current_row = 0;
             }
 
@@ -172,6 +192,10 @@ pub const PostgreSQL = struct {
             return std.mem.span(val);
         }
         return null;
+    }
+
+    pub fn changes(self: *PostgreSQL) usize {
+        return self.affected_rows;
     }
 };
 
