@@ -273,8 +273,19 @@ zig build run -- migrate
 zig build run -- rollback
 ```
 
-> [!TIP]
 > The CLI automatically manages your `migrations/migrations.zig` registry file, keeping it in sync as you add or remove migration files.
+
+### 11. SQL Logging
+You can hook into the execution pipeline to log generated SQL and timing information.
+
+```zig
+fn myLogger(ctx: orm.logging.LogContext) void {
+    std.debug.print("Query: {s} (took {d}ns)\n", .{ctx.sql, ctx.duration_ns});
+}
+
+// ... in your setup ...
+repo.setLogger(myLogger);
+```
 
 ## Design Principles
 

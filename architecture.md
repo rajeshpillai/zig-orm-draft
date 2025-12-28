@@ -46,17 +46,15 @@ The main entry point for applications.
 
 ---
 
-## Technical Features
-
-### Advanced Querying (Completed)
-- [x] Aggregate Functions: Built-in methods `repo.count(q)` and `repo.scalar(T, q)`.
-- [x] Custom Result Mapping: Map joined results to arbitrary structs via `repo.allAs(T, q)`.
-
-### CLI Tools (Core Completed)
-- [x] **Automatic Registry**: CLI automatically maintains `migrations/migrations.zig`.
-- [x] **Migration Generator**: Generate timestamped boilerplate migration files.
-- [x] **Execution Engine**: Command-line interface to `migrate` and `rollback`.
-- [ ] **Model Generator**: (Future) Boilerplate generation from existing DB.
+### Technical Features
+*   [x] **Core ORM**: `Repo(Adapter)` pattern with `insert`, `update`, `delete`, `all`.
+*   [x] **Query Builder**: Fluent interface (`where`, `limit`, `orderBy`, `join`, `groupBy`).
+*   [x] **Adapter System**: SQLite (Native/C-ABI) implemented.
+*   [x] **Validation**: `Validator` struct with `required`, `length`, `email`, `regex`.
+*   [x] **Migrations**: Fluent DSL for schema definition.
+*   [x] **CLI Tools**: Automatic registry, migration generator and execution (Core Completed).
+*   [x] **Logging**: SQL execution logging with timing.
+*   [ ] **Model Generation**: CLI command to inspect DB and generate Zig structs.
 
 ---
 

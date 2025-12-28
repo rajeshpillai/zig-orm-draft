@@ -58,8 +58,12 @@ pub fn Repo(comptime Adapter: type) type {
             const sql = try q.toStatementSql();
             defer self.allocator.free(sql);
 
+            var timer = std.time.Timer.start() catch unreachable;
             var stmt = try self.adapter.prepare(sql);
-            defer stmt.deinit();
+            defer {
+                stmt.deinit();
+                self.dispatchLog(sql, timer.read());
+            }
 
             const Q = if (@typeInfo(@TypeOf(q)) == .pointer) @typeInfo(@TypeOf(q)).pointer.child else @TypeOf(q);
             const Cols = Q.Table.columns;
@@ -101,8 +105,12 @@ pub fn Repo(comptime Adapter: type) type {
             const sql = try mutable_q.toSql();
             defer self.allocator.free(sql);
 
+            var timer = std.time.Timer.start() catch unreachable;
             var stmt = try self.adapter.prepare(sql);
-            defer stmt.deinit();
+            defer {
+                stmt.deinit();
+                self.dispatchLog(sql, timer.read());
+            }
 
             // Bind params
             for (q.params.items, 0..) |param, i| {
@@ -121,8 +129,12 @@ pub fn Repo(comptime Adapter: type) type {
             const sql = try mutable_q.toSql();
             defer self.allocator.free(sql);
 
+            var timer = std.time.Timer.start() catch unreachable;
             var stmt = try self.adapter.prepare(sql);
-            defer stmt.deinit();
+            defer {
+                stmt.deinit();
+                self.dispatchLog(sql, timer.read());
+            }
 
             // Bind params
             for (q.params.items, 0..) |param, i| {
@@ -167,8 +179,12 @@ pub fn Repo(comptime Adapter: type) type {
             const sql = try q.toSql(self.allocator);
             defer self.allocator.free(sql);
 
+            var timer = std.time.Timer.start() catch unreachable;
             var stmt = try self.adapter.prepare(sql);
-            defer stmt.deinit();
+            defer {
+                stmt.deinit();
+                self.dispatchLog(sql, timer.read());
+            }
 
             // Bind WHERE clause parameters
             // q.params is ArrayList(Value) where Value = union(enum) { Integer: i64, Text: []const u8, Boolean: bool }
@@ -246,8 +262,12 @@ pub fn Repo(comptime Adapter: type) type {
             const sql = try q.toSql(self.allocator);
             defer self.allocator.free(sql);
 
+            var timer = std.time.Timer.start() catch unreachable;
             var stmt = try self.adapter.prepare(sql);
-            defer stmt.deinit();
+            defer {
+                stmt.deinit();
+                self.dispatchLog(sql, timer.read());
+            }
 
             // Bind WHERE clause parameters
             for (q.params.items, 0..) |param, i| {
@@ -276,8 +296,12 @@ pub fn Repo(comptime Adapter: type) type {
             const sql = try q.toSql(self.allocator);
             defer self.allocator.free(sql);
 
+            var timer = std.time.Timer.start() catch unreachable;
             var stmt = try self.adapter.prepare(sql);
-            defer stmt.deinit();
+            defer {
+                stmt.deinit();
+                self.dispatchLog(sql, timer.read());
+            }
 
             // Bind params
             for (q.params.items, 0..) |param, i| {
@@ -334,8 +358,12 @@ pub fn Repo(comptime Adapter: type) type {
 
         /// Execute a raw SQL query and map results to ResultT
         pub fn query(self: *Self, comptime ResultT: type, sql: [:0]const u8, params: []const core_types.Value) ![]ResultT {
+            var timer = std.time.Timer.start() catch unreachable;
             var stmt = try self.adapter.prepare(sql);
-            defer stmt.deinit();
+            defer {
+                stmt.deinit();
+                self.dispatchLog(sql, timer.read());
+            }
 
             // Bind params
             for (params, 0..) |param, i| {
@@ -383,8 +411,12 @@ pub fn Repo(comptime Adapter: type) type {
 
         /// Execute a raw SQL statement (INSERT, UPDATE, DELETE, etc.)
         pub fn execute(self: *Self, sql: [:0]const u8, params: []const core_types.Value) !void {
+            var timer = std.time.Timer.start() catch unreachable;
             var stmt = try self.adapter.prepare(sql);
-            defer stmt.deinit();
+            defer {
+                stmt.deinit();
+                self.dispatchLog(sql, timer.read());
+            }
 
             // Bind params
             for (params, 0..) |param, i| {
@@ -430,8 +462,12 @@ pub fn Repo(comptime Adapter: type) type {
             const sql_z = try self.allocator.dupeZ(u8, sql.items);
             defer self.allocator.free(sql_z);
 
+            var timer = std.time.Timer.start() catch unreachable;
             var stmt = try self.adapter.prepare(sql_z);
-            defer stmt.deinit();
+            defer {
+                stmt.deinit();
+                self.dispatchLog(sql_z, timer.read());
+            }
 
             var bind_idx: usize = 0;
             inline for (TableT.columns) |col| {
@@ -465,8 +501,12 @@ pub fn Repo(comptime Adapter: type) type {
             const sql = try self.allocator.dupeZ(u8, sql_raw);
             defer self.allocator.free(sql);
 
+            var timer = std.time.Timer.start() catch unreachable;
             var stmt = try self.adapter.prepare(sql);
-            defer stmt.deinit();
+            defer {
+                stmt.deinit();
+                self.dispatchLog(sql, timer.read());
+            }
 
             try stmt.bind_int(0, @intCast(item.id));
             _ = try stmt.step();
