@@ -206,6 +206,19 @@ pub fn build(b: *std.Build) void {
     const run_migrations_tests = b.addRunArtifact(migrations_tests);
     test_step.dependOn(&run_migrations_tests.step);
 
+    // Postgres Migrations tests
+    const pg_migrations_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/pg/migrations_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    pg_migrations_tests.root_module.addImport("zig-orm", mod);
+    pg_migrations_tests.linkLibC();
+    const run_pg_migrations_tests = b.addRunArtifact(pg_migrations_tests);
+    test_step.dependOn(&run_pg_migrations_tests.step);
+
     // Validation tests
     const validation_tests = b.addTest(.{
         .root_module = b.createModule(.{
@@ -219,6 +232,19 @@ pub fn build(b: *std.Build) void {
 
     const run_validation_tests = b.addRunArtifact(validation_tests);
     test_step.dependOn(&run_validation_tests.step);
+
+    // Postgres Validation tests
+    const pg_validation_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/pg/validation_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    pg_validation_tests.root_module.addImport("zig-orm", mod);
+    pg_validation_tests.linkLibC();
+    const run_pg_validation_tests = b.addRunArtifact(pg_validation_tests);
+    test_step.dependOn(&run_pg_validation_tests.step);
 
     // Timestamp tests
     const timestamp_tests = b.addTest(.{
@@ -234,6 +260,19 @@ pub fn build(b: *std.Build) void {
     const run_timestamp_tests = b.addRunArtifact(timestamp_tests);
     test_step.dependOn(&run_timestamp_tests.step);
 
+    // Postgres Timestamp tests
+    const pg_timestamp_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/pg/timestamp_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    pg_timestamp_tests.root_module.addImport("zig-orm", mod);
+    pg_timestamp_tests.linkLibC();
+    const run_pg_timestamp_tests = b.addRunArtifact(pg_timestamp_tests);
+    test_step.dependOn(&run_pg_timestamp_tests.step);
+
     // Raw SQL tests
     const raw_sql_tests = b.addTest(.{
         .root_module = b.createModule(.{
@@ -247,6 +286,19 @@ pub fn build(b: *std.Build) void {
 
     const run_raw_sql_tests = b.addRunArtifact(raw_sql_tests);
     test_step.dependOn(&run_raw_sql_tests.step);
+
+    // Postgres Raw SQL tests
+    const pg_raw_sql_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/pg/raw_sql_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    pg_raw_sql_tests.root_module.addImport("zig-orm", mod);
+    pg_raw_sql_tests.linkLibC();
+    const run_pg_raw_sql_tests = b.addRunArtifact(pg_raw_sql_tests);
+    test_step.dependOn(&run_pg_raw_sql_tests.step);
 
     // Query builder tests
     const query_builder_tests = b.addTest(.{
@@ -276,6 +328,19 @@ pub fn build(b: *std.Build) void {
     const run_migration_helpers_tests = b.addRunArtifact(migration_helpers_tests);
     test_step.dependOn(&run_migration_helpers_tests.step);
 
+    // Postgres Migration Helpers tests
+    const pg_migration_helpers_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/pg/migration_helpers_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    pg_migration_helpers_tests.root_module.addImport("zig-orm", mod);
+    pg_migration_helpers_tests.linkLibC();
+    const run_pg_migration_helpers_tests = b.addRunArtifact(pg_migration_helpers_tests);
+    test_step.dependOn(&run_pg_migration_helpers_tests.step);
+
     // Logging tests
     const logging_test = b.addTest(.{
         .root_module = b.createModule(.{
@@ -288,6 +353,19 @@ pub fn build(b: *std.Build) void {
     logging_test.linkLibC();
     const run_logging_test = b.addRunArtifact(logging_test);
     test_step.dependOn(&run_logging_test.step);
+
+    // Postgres Logging tests
+    const pg_logging_test = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/pg/logging_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    pg_logging_test.root_module.addImport("zig-orm", mod);
+    pg_logging_test.linkLibC();
+    const run_pg_logging_test = b.addRunArtifact(pg_logging_test);
+    test_step.dependOn(&run_pg_logging_test.step);
 
     // Locking tests
     const locking_test = b.addTest(.{
@@ -305,7 +383,7 @@ pub fn build(b: *std.Build) void {
     // Postgres Locking tests
     const pg_locking_test = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/tests/pg/postgres_locking_test.zig"),
+            .root_source_file = b.path("src/tests/pg/locking_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
