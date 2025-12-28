@@ -100,7 +100,7 @@ pub fn build(b: *std.Build) void {
     // Relations tests
     const relations_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("test/relations_test.zig"),
+            .root_source_file = b.path("src/tests/sqlite/relations_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -114,7 +114,7 @@ pub fn build(b: *std.Build) void {
     // Preload tests
     const preload_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("test/preload_test.zig"),
+            .root_source_file = b.path("src/tests/sqlite/preload_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -128,7 +128,7 @@ pub fn build(b: *std.Build) void {
     // Many-to-Many tests
     const m2m_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("test/many_to_many_test.zig"),
+            .root_source_file = b.path("src/tests/sqlite/many_to_many_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -142,7 +142,7 @@ pub fn build(b: *std.Build) void {
     // PostgreSQL tests (optional - requires PostgreSQL installation)
     const postgres_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("test/postgres_test.zig"),
+            .root_source_file = b.path("src/tests/pg/postgres_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -156,7 +156,7 @@ pub fn build(b: *std.Build) void {
     // Migrations tests
     const migrations_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("test/migrations_test.zig"),
+            .root_source_file = b.path("src/tests/sqlite/migrations_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -170,7 +170,7 @@ pub fn build(b: *std.Build) void {
     // Validation tests
     const validation_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("test/validation_test.zig"),
+            .root_source_file = b.path("src/tests/sqlite/validation_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -184,7 +184,7 @@ pub fn build(b: *std.Build) void {
     // Timestamp tests
     const timestamp_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("test/timestamp_test.zig"),
+            .root_source_file = b.path("src/tests/sqlite/timestamp_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -198,7 +198,7 @@ pub fn build(b: *std.Build) void {
     // Raw SQL tests
     const raw_sql_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/tests/raw_sql_test.zig"),
+            .root_source_file = b.path("src/tests/sqlite/raw_sql_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -212,7 +212,7 @@ pub fn build(b: *std.Build) void {
     // Query builder tests
     const query_builder_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/tests/query_builder_test.zig"),
+            .root_source_file = b.path("src/tests/core/query_builder_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -226,7 +226,7 @@ pub fn build(b: *std.Build) void {
     // Migration Helpers tests
     const migration_helpers_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/tests/migration_helpers_test.zig"),
+            .root_source_file = b.path("src/tests/sqlite/migration_helpers_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -240,7 +240,7 @@ pub fn build(b: *std.Build) void {
     // Logging tests
     const logging_test = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/tests/logging_test.zig"),
+            .root_source_file = b.path("src/tests/sqlite/logging_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -253,7 +253,7 @@ pub fn build(b: *std.Build) void {
     // Locking tests
     const locking_test = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/tests/locking_test.zig"),
+            .root_source_file = b.path("src/tests/sqlite/locking_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -266,7 +266,7 @@ pub fn build(b: *std.Build) void {
     // Postgres Locking tests
     const pg_locking_test = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/tests/postgres_locking_test.zig"),
+            .root_source_file = b.path("src/tests/pg/postgres_locking_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -279,7 +279,7 @@ pub fn build(b: *std.Build) void {
     // Model Hooks tests
     const hooks_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/tests/hooks_test.zig"),
+            .root_source_file = b.path("src/tests/sqlite/hooks_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -293,7 +293,7 @@ pub fn build(b: *std.Build) void {
     // Aggregates tests
     const aggregates_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/tests/aggregates_test.zig"),
+            .root_source_file = b.path("src/tests/sqlite/aggregates_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -307,7 +307,7 @@ pub fn build(b: *std.Build) void {
     // Joins tests
     const joins_tests = b.addTest(.{
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/tests/joins_test.zig"),
+            .root_source_file = b.path("src/tests/sqlite/joins_test.zig"),
             .target = target,
             .optimize = optimize,
         }),
