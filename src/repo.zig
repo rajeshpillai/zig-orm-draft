@@ -24,6 +24,14 @@ pub fn Repo(comptime Adapter: type) type {
             };
         }
 
+        pub fn initFromAdapter(allocator: std.mem.Allocator, adapter: Adapter) Self {
+            return Self{
+                .adapter = adapter,
+                .allocator = allocator,
+                .log_fn = null,
+            };
+        }
+
         pub fn setLogger(self: *Self, logger: logging.LogFn) void {
             self.log_fn = logger;
         }

@@ -314,6 +314,20 @@ pub fn build(b: *std.Build) void {
     const run_query_builder_tests = b.addRunArtifact(query_builder_tests);
     test_step.dependOn(&run_query_builder_tests.step);
 
+    // Pool tests
+    const pool_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/core/pool_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    pool_tests.root_module.addImport("zig-orm", mod);
+    pool_tests.linkLibC();
+
+    const run_pool_tests = b.addRunArtifact(pool_tests);
+    test_step.dependOn(&run_pool_tests.step);
+
     // Migration Helpers tests
     const migration_helpers_tests = b.addTest(.{
         .root_module = b.createModule(.{
