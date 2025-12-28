@@ -102,7 +102,8 @@ pub fn Repo(comptime Adapter: type) type {
                     const FieldType = @TypeOf(val);
 
                     // Handle enums
-                    if (@typeInfo(FieldType) == .Enum) {
+                    const type_info = @typeInfo(FieldType);
+                    if (type_info == .Enum) {
                         if (core_types.shouldStoreEnumAsText(FieldType)) {
                             const text = core_types.enumToText(FieldType, val);
                             try stmt.bind_text(i, text);
