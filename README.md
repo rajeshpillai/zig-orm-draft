@@ -77,16 +77,28 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const alloc = gpa.allocator();
 
-    // 1. Initialize Pool
-    var pool = try orm.Pool(PG).init(alloc, .{ .max_connections = 5 }, "postgresql://postgres:root123@localhost:5432/mydb");
+    // 1. Initialize Pool with optional read replicas
+    const replica_strs = [_][:0]const u8{
+        "postgresql://postgres:pass@replica1:5432/mydb",
+        "postgresql://postgres:pass@replica2:5432/mydb",
+    };
+    var pool = try orm.Pool(PG).init(alloc, .{ 
+        .max_connections = 5,
+        .replica_conn_strs = &replica_strs, // Optional
+    }, "postgresql://postgres:root123@localhost:5432/mydb");
     defer pool.deinit();
 
-    // 2. Acquire a connection
-    var conn = try pool.acquire(); 
-    // conn is a PooledAdapter wrapper that automatically releases to pool on deinit()
+    // 2. Acquire connections based on operation type
+    // Reads automatically use replicas (if available)
+    var read_conn = try pool.acquireForRead();
+    defer read_conn.deinit();
+    
+    // Writes always use primary
+    var write_conn = try pool.acquireForWrite();
+    defer write_conn.deinit();
 
     // 3. Use with Repo
-    var repo = orm.Repo(orm.Pool(PG).PooledAdapter).initFromAdapter(alloc, conn);
+    var repo = orm.Repo(orm.Pool(PG).PooledAdapter).initFromAdapter(alloc, read_conn);
     defer repo.deinit(); // Releases connection back to pool
 
     // 4. Perform operations

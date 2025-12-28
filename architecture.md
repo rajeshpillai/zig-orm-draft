@@ -39,7 +39,8 @@ The main entry point for applications.
 -   **Transactions**: Provides a clean wrapper around `BEGIN`, `COMMIT`, and `ROLLBACK`.
 
 ### 5. Utilities
--   **Connection Pooling**: Generic, thread-safe pool management using Mutexes.
+-   **Connection Pooling**: Generic, thread-safe pool management using Mutexes with read replica support.
+-   **Read Replicas**: Automatic routing of read operations to replica databases, write operations to primary.
 -   **Migrations**: Versioned Up/Down migration runner with persistence in a `schema_migrations` table.
 -   **Migration Helpers**: Fluent DSL for schema changes (`createTable`, `addColumn`, `addIndex`).
 -   **Validation**: Declarative rules (`rules` decl inside structs) enforced by the Repo.
