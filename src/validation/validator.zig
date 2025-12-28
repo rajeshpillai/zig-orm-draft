@@ -1,12 +1,34 @@
 const std = @import("std");
 
 pub const ValidationError = error{
+    // Field validation errors
     Required,
     TooShort,
     TooLong,
     InvalidEmail,
     OutOfRange,
     InvalidFormat,
+
+    // Constraint violation errors
+    UniqueViolation,
+    ForeignKeyViolation,
+    CheckViolation,
+    NotNullViolation,
+};
+
+/// Detailed constraint error information
+pub const ConstraintError = struct {
+    constraint_type: ConstraintType,
+    field: []const u8,
+    message: []const u8,
+    constraint_name: ?[]const u8 = null,
+
+    pub const ConstraintType = enum {
+        unique,
+        foreign_key,
+        check,
+        not_null,
+    };
 };
 
 /// Validates that a value is not null or empty

@@ -1,4 +1,90 @@
 const std = @import("std");
+
+/// Schema constraint definitions
+pub const Constraint = union(enum) {
+    unique: UniqueConstraint,
+    foreign_key: ForeignKeyConstraint,
+    check: CheckConstraint,
+
+    /// Unique constraint on one or more fields
+    pub const UniqueConstraint = struct {
+        fields: []const []const u8, // Can be composite (multiple fields)
+        name: ?[]const u8 = null, // Optional constraint name for error messages
+    };
+
+    /// Foreign key constraint
+    pub const ForeignKeyConstraint = struct {
+        field: []const u8,
+        references_table: []const u8,
+        references_field: []const u8,
+        on_delete: ?ForeignKeyAction = null,
+        on_update: ?ForeignKeyAction = null,
+
+        pub const ForeignKeyAction = enum {
+            cascade,
+            set_null,
+            restrict,
+            no_action,
+        };
+    };
+
+    /// Check constraint (SQL expression)
+    pub const CheckConstraint = struct {
+        field: []const u8,
+        condition: []const u8, // SQL expression, e.g., "age >= 18"
+        name: ?[]const u8 = null,
+    };
+};
+
+test "constraint types" {
+    const unique = Constraint{
+        .unique = .{
+            .fields = &[_][]const u8{"email"},
+            .name = "unique_email",
+        },
+    };
+
+    try std.testing.expect(unique == .unique);
+    try std.testing.expectEqual(@as(usize, 1), unique.unique.fields.len);
+    try std.testing.expectEqualStrings("email", unique.unique.fields[0]);
+}
+
+test "composite unique constraint" {
+    const unique = Constraint{
+        .unique = .{
+            .fields = &[_][]const u8{ "user_id", "slug" },
+        },
+    };
+
+    try std.testing.expectEqual(@as(usize, 2), unique.unique.fields.len);
+}
+
+test "foreign key constraint" {
+    const fk = Constraint{
+        .foreign_key = .{
+            .field = "user_id",
+            .references_table = "users",
+            .references_field = "id",
+            .on_delete = .cascade,
+        },
+    };
+
+    try std.testing.expect(fk == .foreign_key);
+    try std.testing.expectEqualStrings("user_id", fk.foreign_key.field);
+}
+
+test "check constraint" {
+    const check = Constraint{
+        .check = .{
+            .field = "age",
+            .condition = "age >= 18",
+            .name = "age_check",
+        },
+    };
+
+    try std.testing.expect(check == .check);
+    try std.testing.expectEqualStrings("age >= 18", check.check.condition);
+}
 const Type = @import("types.zig").Type;
 const query = @import("../builder/query.zig");
 
