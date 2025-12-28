@@ -230,7 +230,7 @@ _ = try q.innerJoin(Users, "posts.user_id = users.id");
 const results = try repo.allAs(PostWithUser, &q);
 ```
 
-### 8. Migrations
+### 9. Migrations
 Schema versioning with up/down support and a fluent DSL for table management.
 
 ```zig

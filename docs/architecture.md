@@ -41,6 +41,7 @@ The main entry point for applications.
 ### 5. Utilities
 -   **Connection Pooling**: Generic, thread-safe pool management using Mutexes with read replica support.
 -   **Read Replicas**: Automatic routing of read operations to replica databases, write operations to primary.
+-   **Soft Delete**: Automatic `deleted_at` field detection with query filtering, restore, and force delete support.
 -   **Migrations**: Versioned Up/Down migration runner with persistence in a `schema_migrations` table.
 -   **Migration Helpers**: Fluent DSL for schema changes (`createTable`, `addColumn`, `addIndex`).
 -   **Validation**: Declarative rules (`rules` decl inside structs) enforced by the Repo.
@@ -57,6 +58,8 @@ The main entry point for applications.
 *   [x] **Logging**: SQL execution logging with timing.
 *   [x] **Optimistic Locking**: Automatic version checking and incrementing.
 *   [x] **Connection Pooling**: Generic `Pool(Adapter)` implementation.
+*   [x] **Read Replicas**: Automatic routing with `acquireForRead()`/`acquireForWrite()`.
+*   [x] **Soft Delete**: Automatic `deleted_at` detection with restore and force delete.
 *   [x] **Model Generation**: CLI command to inspect DB and generate Zig structs.
 
 ---
@@ -73,10 +76,9 @@ The following features would bring the ORM to full production readiness:
 -   **Generic Logger**: A way to plug in custom logging to see generated SQL and execution times.
 
 ### Phase 5: Production Hardening
--   **Soft Deletes**: Automatically handling a `deleted_at` field so rows are hidden but not removed.
--   **Optimistic Locking**: Support for a `version` or `lock_version` field to prevent concurrent update conflicts.
 -   **Enum Mapping**: Native mapping between Zig `enum` and DB `TEXT` or `INTEGER` types.
--   **Read-Only Replicas**: Support in the Connection Pool for routing SELECTs to replicas and writes to a primary.
+-   **Advanced Transactions**: Savepoints, nested transactions, and transaction isolation levels.
+-   **Query Caching**: Cache frequently-used queries for performance.
 
 ---
 
