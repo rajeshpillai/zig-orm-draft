@@ -79,6 +79,7 @@ pub fn Query(comptime TableT: type) type {
         joins: std.ArrayList(Join),
         limit_val: ?u64 = null,
         offset_val: ?u64 = null,
+        include_trashed: bool = false, // For soft delete support
 
         pub fn init(allocator: std.mem.Allocator) !Self {
             return Self{
@@ -259,6 +260,37 @@ pub fn Query(comptime TableT: type) type {
         pub fn offset(self: *Self, value: u64) *Self {
             self.offset_val = value;
             return self;
+        }
+
+        /// Add IS NULL condition for a field
+        pub fn whereNull(self: *Self, field: []const u8) !*Self {
+            if (self.where_exprs.items.len > 0) {
+                try self.where_exprs.appendSlice(self.allocator, " AND ");
+            }
+            try self.where_exprs.appendSlice(self.allocator, field);
+            try self.where_exprs.appendSlice(self.allocator, " IS NULL");
+            return self;
+        }
+
+        /// Add IS NOT NULL condition for a field
+        pub fn whereNotNull(self: *Self, field: []const u8) !*Self {
+            if (self.where_exprs.items.len > 0) {
+                try self.where_exprs.appendSlice(self.allocator, " AND ");
+            }
+            try self.where_exprs.appendSlice(self.allocator, field);
+            try self.where_exprs.appendSlice(self.allocator, " IS NOT NULL");
+            return self;
+        }
+
+        /// Include soft-deleted records in query results
+        pub fn withTrashed(self: *Self) !*Self {
+            self.include_trashed = true;
+            return self;
+        }
+
+        /// Only return soft-deleted records
+        pub fn onlyTrashed(self: *Self) !*Self {
+            return try self.whereNotNull("deleted_at");
         }
 
         pub fn select(self: *Self, expr: []const u8) !*Self {
