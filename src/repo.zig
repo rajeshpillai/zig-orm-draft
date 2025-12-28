@@ -89,6 +89,10 @@ pub fn Repo(comptime Adapter: type) type {
                 // Auto-validate
                 try validation.validate(item);
 
+                // Validate constraints (unique, check, etc.)
+                const constraints_mod = @import("validation/constraints.zig");
+                try constraints_mod.validateConstraints(@TypeOf(item.*), self, item);
+
                 // Auto-set timestamps
                 if (comptime timestamps.hasTimestamps(@TypeOf(item.*))) {
                     timestamps.setCreatedAt(item);

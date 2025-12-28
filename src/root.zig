@@ -13,6 +13,7 @@ pub const pool = @import("core/pool.zig");
 pub const Pool = pool.Pool;
 pub const migrations = @import("migrations/runner.zig");
 pub const validation = @import("validation/validator.zig");
+pub const constraints = @import("validation/constraints.zig");
 pub const timestamps = @import("core/timestamps.zig");
 pub const hooks = @import("core/hooks.zig");
 pub const logging = @import("core/logging.zig");
@@ -25,5 +26,6 @@ test {
     _ = query;
     _ = @import("pool.zig");
     _ = @import("validation/validator.zig");
+    _ = @import("validation/constraints.zig");
     _ = @import("core/timestamps.zig");
 }
