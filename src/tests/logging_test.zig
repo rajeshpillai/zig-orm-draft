@@ -59,7 +59,7 @@ test "logging - captures sql and duration" {
     // Test Insert
     var changeset = try Users.insert(testing.allocator);
     defer changeset.deinit();
-    try changeset.add(.{ .id = 1, .name = "Bob", .active = true });
+    try changeset.add(.{ .id = 1, .name = "Bob", .active = true, .created_at = 0, .updated_at = 0 });
 
     try repo.insert(changeset);
 
@@ -74,7 +74,12 @@ test "logging - captures sql and duration" {
     _ = try q.where(.{ .name = "Bob" });
 
     const results = try repo.all(q);
-    defer testing.allocator.free(results);
+    defer {
+        for (results) |user| {
+            testing.allocator.free(user.name);
+        }
+        testing.allocator.free(results);
+    }
 
     try testing.expect(log_count == 2);
     try testing.expect(std.mem.startsWith(u8, last_sql.?, "SELECT"));

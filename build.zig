@@ -237,6 +237,32 @@ pub fn build(b: *std.Build) void {
     const run_migration_helpers_tests = b.addRunArtifact(migration_helpers_tests);
     test_step.dependOn(&run_migration_helpers_tests.step);
 
+    // Logging tests
+    const logging_test = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/logging_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    logging_test.root_module.addImport("zig-orm", mod);
+    logging_test.linkLibC();
+    const run_logging_test = b.addRunArtifact(logging_test);
+    test_step.dependOn(&run_logging_test.step);
+
+    // Locking tests
+    const locking_test = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/locking_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    locking_test.root_module.addImport("zig-orm", mod);
+    locking_test.linkLibC();
+    const run_locking_test = b.addRunArtifact(locking_test);
+    test_step.dependOn(&run_locking_test.step);
+
     // Model Hooks tests
     const hooks_tests = b.addTest(.{
         .root_module = b.createModule(.{

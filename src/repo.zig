@@ -5,6 +5,7 @@ const validation = @import("validation/validator.zig");
 const core_types = @import("core/types.zig");
 const hooks = @import("core/hooks.zig");
 const logging = @import("core/logging.zig");
+const errors = @import("core/errors.zig");
 
 pub fn Repo(comptime Adapter: type) type {
     return struct {
@@ -433,6 +434,15 @@ pub fn Repo(comptime Adapter: type) type {
 
         /// Update a specific model instance by ID, triggering hooks
         pub fn updateModel(self: *Self, comptime TableT: type, item: *TableT.model_type) !void {
+            const has_version = comptime blk: {
+                for (std.meta.fields(TableT.model_type)) |field| {
+                    if (std.mem.eql(u8, field.name, "version")) {
+                        break :blk true;
+                    }
+                }
+                break :blk false;
+            };
+
             // Call beforeUpdate hook
             try hooks.callHook(item, "beforeUpdate");
 
@@ -451,6 +461,13 @@ pub fn Repo(comptime Adapter: type) type {
             var first = true;
             inline for (TableT.columns) |col| {
                 if (comptime std.mem.eql(u8, col.name, "id")) continue;
+                if (comptime has_version and std.mem.eql(u8, col.name, "version")) {
+                    if (!first) try sql.appendSlice(self.allocator, ", ");
+                    try sql.appendSlice(self.allocator, "version = version + 1");
+                    first = false;
+                    continue;
+                }
+
                 if (!first) try sql.appendSlice(self.allocator, ", ");
                 try sql.appendSlice(self.allocator, col.name);
                 try sql.appendSlice(self.allocator, " = ?");
@@ -458,6 +475,10 @@ pub fn Repo(comptime Adapter: type) type {
             }
 
             try sql.appendSlice(self.allocator, " WHERE id = ?");
+
+            if (comptime has_version) {
+                try sql.appendSlice(self.allocator, " AND version = ?");
+            }
 
             const sql_z = try self.allocator.dupeZ(u8, sql.items);
             defer self.allocator.free(sql_z);
@@ -472,6 +493,8 @@ pub fn Repo(comptime Adapter: type) type {
             var bind_idx: usize = 0;
             inline for (TableT.columns) |col| {
                 if (comptime std.mem.eql(u8, col.name, "id")) continue;
+                if (comptime has_version and std.mem.eql(u8, col.name, "version")) continue;
+
                 const val = @field(item.*, col.name);
                 switch (col.type) {
                     .Integer => try stmt.bind_int(bind_idx, @intCast(val)),
@@ -482,10 +505,25 @@ pub fn Repo(comptime Adapter: type) type {
                 bind_idx += 1;
             }
 
-            // Bind ID at the end
+            // Bind ID
             try stmt.bind_int(bind_idx, @intCast(item.id));
+            bind_idx += 1;
+
+            if (comptime has_version) {
+                // Bind current version for WHERE clause
+                const current_ver = @field(item.*, "version");
+                try stmt.bind_int(bind_idx, @intCast(current_ver));
+            }
 
             _ = try stmt.step();
+
+            if (comptime has_version) {
+                if (self.adapter.changes() == 0) {
+                    return errors.OptimisticLockError.StaleObject;
+                }
+                // Update struct version in memory on success
+                @field(item.*, "version") += 1;
+            }
 
             // Call afterUpdate hook
             try hooks.callHook(item, "afterUpdate");

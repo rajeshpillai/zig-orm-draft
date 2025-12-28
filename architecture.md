@@ -54,6 +54,7 @@ The main entry point for applications.
 *   [x] **Migrations**: Fluent DSL for schema definition.
 *   [x] **CLI Tools**: Automatic registry, migration generator and execution (Core Completed).
 *   [x] **Logging**: SQL execution logging with timing.
+*   [x] **Optimistic Locking**: Automatic version checking and incrementing.
 *   [ ] **Model Generation**: CLI command to inspect DB and generate Zig structs.
 
 ---

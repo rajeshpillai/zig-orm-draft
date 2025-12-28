@@ -287,6 +287,26 @@ fn myLogger(ctx: orm.logging.LogContext) void {
 repo.setLogger(myLogger);
 ```
 
+### 12. Optimistic Locking
+To prevent concurrent updates from overwriting each other, add a `version: i64` field to your model. The ORM will automatically check and increment this version.
+
+```zig
+const Product = struct {
+    id: i64,
+    // ...
+    version: i64, // Enables optimistic locking
+};
+
+// ...
+
+// If the record was modified by another request since you fetched it:
+repo.updateModel(Products, &product) catch |err| {
+    if (err == orm.errors.OptimisticLockError.StaleObject) {
+         // Handle conflict
+    }
+};
+```
+
 ## Design Principles
 
 *   **Driver-agnostic core**: Separation between Builder/Schema and Adapter.

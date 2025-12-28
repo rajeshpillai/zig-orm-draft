@@ -84,6 +84,10 @@ pub const SQLite = struct {
         if (ptr == null) return null;
         return std.mem.span(ptr);
     }
+
+    pub fn changes(self: *Self) usize {
+        return @intCast(c.sqlite3_changes(self.db));
+    }
 };
 
 test "sqlite exec" {
