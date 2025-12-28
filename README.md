@@ -256,6 +256,26 @@ _ = try q.whereIn("user_id", &user_ids);
 const all_posts = try repo.all(q);
 ```
 
+### 10. CLI Tools
+A standalone CLI is provided for managing migrations without manual boilerplate.
+
+```bash
+# General help
+zig build run -- help
+
+# Generate a new timestamped migration
+zig build run -- generate:migration create_users
+
+# Run all pending migrations
+zig build run -- migrate
+
+# Rollback the last migration
+zig build run -- rollback
+```
+
+> [!TIP]
+> The CLI automatically manages your `migrations/migrations.zig` registry file, keeping it in sync as you add or remove migration files.
+
 ## Design Principles
 
 *   **Driver-agnostic core**: Separation between Builder/Schema and Adapter.

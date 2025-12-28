@@ -49,11 +49,14 @@ The main entry point for applications.
 ## Technical Features
 
 ### Advanced Querying (Completed)
--   **Join Support**: Explicitly join tables: `q.innerJoin(Post, "user.id = post.user_id")`.
--   **Field Selection**: Select specific columns `q.select("name, email")`.
--   **Complex Expressions**: Support for tuple-based where clauses `.{ .age, .gt, 18 }` and logical grouping (`.OR`, `.AND`).
--   **Aggregate Functions**: Built-in methods `repo.count(q)` and `repo.scalar(T, q)`.
--   **Custom Result Mapping**: Map joined results to arbitrary structs via `repo.allAs(T, q)`.
+- [x] Aggregate Functions: Built-in methods `repo.count(q)` and `repo.scalar(T, q)`.
+- [x] Custom Result Mapping: Map joined results to arbitrary structs via `repo.allAs(T, q)`.
+
+### CLI Tools (Core Completed)
+- [x] **Automatic Registry**: CLI automatically maintains `migrations/migrations.zig`.
+- [x] **Migration Generator**: Generate timestamped boilerplate migration files.
+- [x] **Execution Engine**: Command-line interface to `migrate` and `rollback`.
+- [ ] **Model Generator**: (Future) Boilerplate generation from existing DB.
 
 ---
 
@@ -82,6 +85,7 @@ The following features would bring the ORM to full production readiness:
 src/
 ├── adapters/     # DB-specific drivers (sqlite.zig, postgres.zig)
 ├── builder/      # SQL generation (query.zig, insert.zig, etc.)
+├── cli/          # CLI tool implementation (main.zig)
 ├── core/         # Type systems and metadata (schema.zig, timestamps.zig)
 ├── migrations/   # Migration runner and logic
 ├── validation/   # Rule-based validation framework
