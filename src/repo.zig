@@ -139,6 +139,68 @@ pub fn Repo(comptime Adapter: type) type {
         }
 
         pub fn delete(self: *Self, q: anytype) !void {
+            const Q = if (@typeInfo(@TypeOf(q)) == .pointer) @typeInfo(@TypeOf(q)).pointer.child else @TypeOf(q);
+            const ModelType = Q.Table.model_type;
+
+            // Check if model has soft delete support
+            if (comptime hasSoftDelete(ModelType)) {
+                // Soft delete: UPDATE table SET deleted_at = ? WHERE ...
+                return try self.softDelete(q);
+            } else {
+                // Hard delete: DELETE FROM table WHERE ...
+                return try self.forceDelete(q);
+            }
+        }
+
+        /// Soft delete: sets deleted_at timestamp instead of removing record
+        fn softDelete(self: *Self, q: anytype) !void {
+            var mutable_q = q;
+            const timestamp = timestamps.currentTimestamp();
+
+            // Build UPDATE query manually since we need to set deleted_at
+            const Q = if (@typeInfo(@TypeOf(q)) == .pointer) @typeInfo(@TypeOf(q)).pointer.child else @TypeOf(q);
+            const table_name = Q.Table.table_name;
+
+            // Build SQL: UPDATE table SET deleted_at = ? WHERE <conditions>
+            var sql_list = try std.ArrayList(u8).initCapacity(self.allocator, 0);
+            defer sql_list.deinit(self.allocator);
+
+            try sql_list.appendSlice(self.allocator, "UPDATE ");
+            try sql_list.appendSlice(self.allocator, table_name);
+            try sql_list.appendSlice(self.allocator, " SET deleted_at = ?");
+
+            if (mutable_q.where_exprs.items.len > 0) {
+                try sql_list.appendSlice(self.allocator, " WHERE ");
+                try sql_list.appendSlice(self.allocator, mutable_q.where_exprs.items);
+            }
+
+            const sql = try sql_list.toOwnedSliceSentinel(self.allocator, 0);
+            defer self.allocator.free(sql);
+
+            var timer = std.time.Timer.start() catch unreachable;
+            var stmt = try self.adapter.prepare(sql);
+            defer {
+                stmt.deinit();
+                self.dispatchLog(sql, timer.read());
+            }
+
+            // Bind timestamp first
+            try stmt.bind_int(0, timestamp);
+
+            // Bind WHERE params
+            for (mutable_q.params.items, 0..) |param, i| {
+                switch (param) {
+                    .Integer => |val| try stmt.bind_int(i + 1, val),
+                    .Text => |val| try stmt.bind_text(i + 1, val),
+                    .Boolean => |val| try stmt.bind_int(i + 1, if (val) 1 else 0),
+                    .Float, .Blob => return error.UnsupportedTypeBinding,
+                }
+            }
+            _ = try stmt.step();
+        }
+
+        /// Force delete: permanently removes record from database
+        pub fn forceDelete(self: *Self, q: anytype) !void {
             var mutable_q = q;
             const sql = try mutable_q.toSql();
             defer self.allocator.free(sql);
@@ -151,7 +213,54 @@ pub fn Repo(comptime Adapter: type) type {
             }
 
             // Bind params
-            for (q.params.items, 0..) |param, i| {
+            for (mutable_q.params.items, 0..) |param, i| {
+                switch (param) {
+                    .Integer => |val| try stmt.bind_int(i, val),
+                    .Text => |val| try stmt.bind_text(i, val),
+                    .Boolean => |val| try stmt.bind_int(i, if (val) 1 else 0),
+                    .Float, .Blob => return error.UnsupportedTypeBinding,
+                }
+            }
+            _ = try stmt.step();
+        }
+
+        /// Restore a soft-deleted record by setting deleted_at to NULL
+        pub fn restore(self: *Self, q: anytype) !void {
+            const Q = if (@typeInfo(@TypeOf(q)) == .pointer) @typeInfo(@TypeOf(q)).pointer.child else @TypeOf(q);
+            const ModelType = Q.Table.model_type;
+
+            if (comptime !hasSoftDelete(ModelType)) {
+                return error.SoftDeleteNotSupported;
+            }
+
+            var mutable_q = q;
+            const table_name = Q.Table.table_name;
+
+            // Build SQL: UPDATE table SET deleted_at = NULL WHERE <conditions>
+            var sql_list = try std.ArrayList(u8).initCapacity(self.allocator, 0);
+            defer sql_list.deinit(self.allocator);
+
+            try sql_list.appendSlice(self.allocator, "UPDATE ");
+            try sql_list.appendSlice(self.allocator, table_name);
+            try sql_list.appendSlice(self.allocator, " SET deleted_at = NULL");
+
+            if (mutable_q.where_exprs.items.len > 0) {
+                try sql_list.appendSlice(self.allocator, " WHERE ");
+                try sql_list.appendSlice(self.allocator, mutable_q.where_exprs.items);
+            }
+
+            const sql = try sql_list.toOwnedSliceSentinel(self.allocator, 0);
+            defer self.allocator.free(sql);
+
+            var timer = std.time.Timer.start() catch unreachable;
+            var stmt = try self.adapter.prepare(sql);
+            defer {
+                stmt.deinit();
+                self.dispatchLog(sql, timer.read());
+            }
+
+            // Bind WHERE params
+            for (mutable_q.params.items, 0..) |param, i| {
                 switch (param) {
                     .Integer => |val| try stmt.bind_int(i, val),
                     .Text => |val| try stmt.bind_text(i, val),
@@ -166,6 +275,12 @@ pub fn Repo(comptime Adapter: type) type {
         pub fn findBy(self: *Self, comptime TableT: type, condition: anytype) !?TableT.model_type {
             var q = try builder.from(TableT, self.allocator);
             defer q.deinit();
+
+            // Automatically filter soft-deleted records
+            if (comptime hasSoftDelete(TableT.model_type) and !q.include_trashed) {
+                _ = try q.whereNull("deleted_at");
+            }
+
             _ = try q.where(condition);
             _ = q.limit(1);
 
@@ -182,6 +297,12 @@ pub fn Repo(comptime Adapter: type) type {
         pub fn findAllBy(self: *Self, comptime TableT: type, condition: anytype) ![]TableT.model_type {
             var q = try builder.from(TableT, self.allocator);
             defer q.deinit();
+
+            // Automatically filter soft-deleted records
+            if (comptime hasSoftDelete(TableT.model_type) and !q.include_trashed) {
+                _ = try q.whereNull("deleted_at");
+            }
+
             _ = try q.where(condition);
 
             return try self.all(q);
