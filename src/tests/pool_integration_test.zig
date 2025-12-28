@@ -30,7 +30,7 @@ test "pool - sqlite integration" {
     const has_row = try stmt.step();
     try testing.expect(has_row);
 
-    const name = orm.pool.PooledAdapter(sqlite.SQLite3).column_text(&stmt, 0);
+    const name = orm.pool.PooledAdapter(sqlite.SQLite).column_text(&stmt, 0);
     try testing.expectEqualStrings("test", name.?);
 }
 
