@@ -150,10 +150,20 @@ const all_posts = try repo.all(q);
 
 ### 6. Migrations
 
-```zig
+// Migrations with DSL
 pub fn up_001(db_ptr: *anyopaque) !void {
     const db: *orm.sqlite.SQLite = @ptrCast(@alignCast(db_ptr));
-    try db.exec("CREATE TABLE users (id BIGINT PRIMARY KEY, name TEXT, created_at INTEGER, updated_at INTEGER)");
+    // Migration helpers are available via the runner or directly
+    var helper = orm.migrations.helpers.MigrationHelper(orm.sqlite.SQLite).init(db, allocator);
+
+    try helper.createTable("users", &[_]orm.migrations.helpers.Column{
+        .{ .name = "id", .type = .integer, .primary_key = true },
+        .{ .name = "name", .type = .text, .nullable = false },
+        .{ .name = "created_at", .type = .timestamp },
+        .{ .name = "updated_at", .type = .timestamp },
+    });
+
+    try helper.addIndex("idx_users_name", &[_][]const u8{"name"}, true);
 }
 
 const migrations_list = [_]orm.migrations.Migration{
