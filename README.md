@@ -98,8 +98,30 @@ try repo.insert(changeset);
 // Select with filters
 var q = try orm.from(Users, allocator);
 defer q.deinit();
+
+// Simple equality (existing)
 _ = try q.where(.{ .active = true });
+
+// Comparison operators
+_ = try q.where(.{ .age, .gt, 18 });
+_ = try q.where(.{ .name, .like, "Ali%" });
+
+// Logical grouping (OR/AND/NOT)
+_ = try q.where(.{ .{ .active = true }, .OR, .{ .id, .lt, 100 } });
+
 const users = try repo.all(q);
+
+// Raw SQL Support
+const Result = struct { id: i64, name: []const u8 };
+const sql = "SELECT id, name FROM users WHERE age > ?";
+const params = &[_]orm.Value{ .{ .Integer = 21 } };
+const results = try repo.query(Result, sql, params);
+
+// Execute non-SELECT raw SQL
+try repo.execute("UPDATE users SET active = ? WHERE id = ?", &.{
+    .{ .Boolean = false },
+    .{ .Integer = 1 }
+});
 
 // Update (Auto-refreshes updated_at)
 var u = try Users.update(allocator);
