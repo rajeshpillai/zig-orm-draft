@@ -18,6 +18,7 @@ pub const timestamps = @import("core/timestamps.zig");
 pub const hooks = @import("core/hooks.zig");
 pub const logging = @import("core/logging.zig");
 pub const errors = @import("core/errors.zig");
+pub const error_mapper = @import("core/error_mapper.zig");
 
 test {
     _ = sqlite;
@@ -28,4 +29,5 @@ test {
     _ = @import("validation/validator.zig");
     _ = @import("validation/constraints.zig");
     _ = @import("core/timestamps.zig");
+    _ = @import("core/error_mapper.zig");
 }
