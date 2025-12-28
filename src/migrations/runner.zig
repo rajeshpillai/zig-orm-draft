@@ -1,5 +1,6 @@
 const std = @import("std");
 const timestamps = @import("../core/timestamps.zig");
+pub const helpers = @import("helpers.zig");
 const Allocator = std.mem.Allocator;
 
 pub const MigrationFn = *const fn (db: *anyopaque) anyerror!void;
@@ -24,6 +25,10 @@ pub fn MigrationRunner(comptime Adapter: type) type {
                 .adapter = adapter,
                 .allocator = allocator,
             };
+        }
+
+        pub fn helper(self: *Self) helpers.MigrationHelper(Adapter) {
+            return helpers.MigrationHelper(Adapter).init(self.adapter, self.allocator);
         }
 
         pub fn createMigrationsTable(self: *Self) !void {
